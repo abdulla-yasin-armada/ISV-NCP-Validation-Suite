@@ -1,0 +1,3728 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+
+# NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+# property and proprietary rights in and to this material, related
+# documentation and any modifications thereto. Any use, reproduction,
+# disclosure or distribution of this material and related documentation
+# without an express license agreement from NVIDIA CORPORATION or
+# its affiliates is strictly prohibited.
+
+# NCP Validation Test Suite - Hierarchical Test Data
+# Structure: Domain > Component > Capability > Tests
+domains:
+  - name: Foundational Services
+    components:
+      - name: Image Registry
+        capabilities:
+          - description: Stores and distributes boot images, VM images, containers, and deployment artifacts. Acts as a trusted source for all deployable assets.
+            example: GCP Artifact Registry + Images
+            tests:
+              - summary: CRUD an custom OS image (iso file) (Upload an ISO file if supported, or remote URL if supported).
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#37 (closed)"
+                  - "#38 (closed)"
+                req_id: BOOT01
+                test_id: BOOT01-01
+                status: approved
+                notes: ""
+              - summary: CRUD an OS install configuration (e.g. iPXE config like Carbide)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#39 (closed)"
+                req_id: BOOT01
+                test_id: BOOT01-02
+                status: approved
+                notes: ""
+              - summary: CRUD a custom VM image
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#40 (closed)"
+                req_id: BOOT03
+                test_id: BOOT03-01
+                status: approved
+                notes: ""
+              - summary: CRUD (get, list, create, delete) custom OS images for fast boot (raw, qcow2, img, etc) for BM/VM
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#104 (closed)"
+                req_id: BOOT03
+                test_id: BOOT03-02
+                status: approved
+                notes: ""
+              - summary: Check that an OS image can be installed on a BMaaS system
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#41 (closed)"
+                req_id: BOOT01
+                test_id: BOOT01-03
+                status: approved
+                notes: ""
+              - summary: Check that an OS install configuration can be installed on a BMaaS system
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#43 (closed)"
+                req_id: BOOT01
+                test_id: BOOT01-04
+                status: approved
+                notes: ""
+              - summary: Check that a VM image can be installed onto a VMaaS system
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#44 (closed)"
+                req_id: BOOT01
+                test_id: BOOT01-05
+                status: approved
+                notes: ""
+              - summary: Verify that an OS image (iso file) with full NVIDIA support is readily available
+                priority: P1
+                milestone: M4
+                req_id: ""
+                test_id: IMG-XX-01
+                status: approved
+                notes: ""
+              - summary: Verify that an OS install configuration (e.g. iPXE config like Carbide) with full NVIDIA support is readily available
+                priority: P1
+                milestone: M4
+                req_id: ""
+                test_id: IMG-XX-02
+                status: approved
+                notes: ""
+              - summary: Verify that an VM image with full NVIDIA support is readily available
+                priority: P1
+                milestone: M4
+                req_id: ""
+                test_id: IMG-XX-03
+                status: approved
+                notes: ""
+      - name: Key Secret Mgmt
+        capabilities:
+          - description: Securely stores and manages cryptographic keys, secrets, and certificates. Supports key rotation
+            example: AWS Secrets Manager / KMS
+            tests:
+              - summary: CRUD an SSH/Teleport compatible public key for system login
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: AUTH-XX-01
+                status: approved
+                notes: ""
+              - summary: Spin up an instance which uses a specified key
+                milestone: M5
+                req_id: ""
+                test_id: AUTH-XX-02
+                status: approved
+                priority: P1
+                notes: ""
+                github_issues:
+                  - "#247 (open)"
+              - summary: Access other components via a specified key as possible (SOL, Network devices)
+                milestone: M5
+                req_id: ""
+                test_id: AUTH-XX-03
+                status: approved
+                priority: P1
+                notes: ""
+                github_issues:
+                  - "#248 (open)"
+      - name: Identity and Asset Mgmt (IAM)
+        capabilities:
+          - description: Manages users, service identities, roles, and permissions across tenants and services. Forms the security foundation of the platform.
+            example: "AWS: IAM"
+            tests:
+              - summary: Create user and log in as that user
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#21 (closed)"
+                req_id: ""
+                test_id: IAM-XX-01
+                status: approved
+                notes: ""
+              - summary: Delete user
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#23 (closed)"
+                req_id: ""
+                test_id: IAM-XX-02
+                status: approved
+                notes: ""
+              - summary: Validate that a user created can access the API and authorized resources
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                milestone: M5
+                req_id: ""
+                test_id: IAM-XX-03
+                status: approved
+                notes: ""
+                github_issues:
+                  - "#341 (open)"
+      - name: DDI
+        capabilities:
+          - description: core network services for name resolution, IP allocation, and address lifecycle management
+            example: GCP Cloud DNS + IPAM
+            tests:
+              - summary: Check that IP addresses are managed by the platform, and that DHCP is able to provide IP addresses
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                github_issues:
+                  - "#131 (closed)"
+                req_id: ""
+                test_id: CP-XX-01
+                status: approved
+                notes: ""
+              - summary: "Check that IP addresses are managed sensibly as VPCs are configured (Move to SDN section?)"
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                github_issues:
+                  - "#132 (closed)"
+                req_id: ""
+                test_id: CP-XX-02
+                status: approved
+                notes: ""
+      - name: "Network Underlay & Mgmt"
+        capabilities:
+          - description: Brings up the physical network fabric for Day 0, base configuration, and network OS installation. Manages switch OS versions, compliance, and safe upgrades over time. Provides base network that overlays and tenants are built upon.
+            example: Netris
+            tests:
+              - summary: Verify that all switches in the are reachable and healthy (SSH, API, etc)
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                req_id: ""
+                test_id: NETMGMT-XX-01
+                status: pending
+                notes: ""
+      - name: Resource Database
+        capabilities:
+          - description: Resource Inventory for useable resources withing the data center
+            tests:
+              - summary: Verify that all resources assigned to the cluster are accounted for
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: RESDB-XX-01
+                status: pending
+                notes: ""
+  - name: Infrastructure and Data Services
+    components:
+      - name: Control Plane accessible
+        capabilities:
+          - description: Control plane can be accessed
+            tests:
+              - summary: Make sure we can ping the control plane, or get a heart beat/status code
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#26 (closed)"
+                  - "#27 (closed)"
+                req_id: ""
+                test_id: CP-XX-03
+                status: approved
+                notes: ""
+              - summary: Control Plane can be upgraded (measure impact)
+                priority: P2
+                dependencies:
+                  - LimitedEnv
+                milestone: M5
+                req_id: ""
+                test_id: CP-XX-04
+                status: approved
+                notes: ""
+                github_issues:
+                  - "#261 (open)"
+              - summary: Access keys can be created, received, used to log in
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#28 (closed)"
+                req_id: ""
+                test_id: CP-XX-05
+                status: approved
+                notes: ""
+              - summary: Access keys can expire or be disabled
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#29 (closed)"
+                req_id: ""
+                test_id: CP-XX-06
+                status: approved
+                notes: ""
+              - summary: Create tenants
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#30 (closed)"
+                req_id: ""
+                test_id: CP-XX-07
+                status: approved
+                notes: ""
+              - summary: Retrieve list of tenants
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#31 (closed)"
+                req_id: ""
+                test_id: CP-XX-08
+                status: approved
+                notes: ""
+              - summary: Retrieve info about individual tenant
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#32 (closed)"
+                  - "#33 (closed)"
+                req_id: ""
+                test_id: CP-XX-09
+                status: approved
+                notes: ""
+              - summary: Delete Tenant
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#34 (closed)"
+                req_id: ""
+                test_id: CP-XX-10
+                status: approved
+                notes: ""
+              - summary: Add user to tenant
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#35 (closed)"
+                req_id: ""
+                test_id: CP-XX-11
+                status: approved
+                notes: ""
+      - name: Hardware ingestion
+        capabilities:
+          - description: Makes sure that all hardware under test has been ingested
+            tests:
+              - summary: Makes sure that all hardware under test has been ingested, and matches the provided hardware
+                priority: P1 (check w/ ISVs)
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                github_issues:
+                  - "#133 (open)"
+                req_id: ""
+                test_id: HWING-XX-01
+                status: approved
+                notes: ""
+              - summary: Make sure that a device can be removed from the system
+                priority: P1
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                req_id: ""
+                test_id: HWING-XX-02
+                status: approved
+                notes: ""
+      - name: Attestation
+        capabilities:
+          - description: ""
+            tests:
+              - summary: Check that hardware passes nonce check
+                priority: P1
+                dependencies:
+                  - MiniCloud
+                milestone: M5
+                req_id: SEC22
+                test_id: SEC22-01
+                status: approved
+                notes: ""
+                github_issues:
+                  - "#315 (open)"
+              - summary: Check that OS is approved
+                priority: P1
+                dependencies:
+                  - MiniCloud
+                milestone: M5
+                req_id: ""
+                test_id: ATTEST-XX-01
+                status: approved
+                notes: ""
+                github_issues:
+                  - "#243 (open)"
+              - summary: Check that TPM Configuration can be set per host
+                priority: P1
+                dependencies:
+                  - MiniCloud
+                milestone: M5
+                req_id: SEC22
+                test_id: SEC22-02
+                status: approved
+                notes: ""
+                github_issues:
+                  - "#316 (open)"
+              - summary: Check that an updated BIOS is installed on all hardware
+                priority: P1
+                dependencies:
+                  - MiniCloud
+                milestone: M5
+                req_id: ""
+                test_id: ATTEST-XX-02
+                status: approved
+                notes: ""
+                github_issues:
+                  - "#319 (open)"
+                  - "#246 (open)"
+              - summary: Check that the updated firmware is installed
+                labels:
+                  - min_req
+                priority: P1
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                req_id: CNP09
+                test_id: CNP09-01
+                status: approved
+                notes: ""
+              - summary: Verify all firmware is cryptographically signed and attested during boot
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#259 (open)"
+                req_id: CNP09
+                test_id: CNP09-02
+                status: pending
+              - summary: TPM Secure Boot in BIOS
+                notes: REVIEW
+                req_id: SEC22
+                test_id: SEC22-03
+                status: pending
+                priority: ""
+      - name: "Compute Services: BMaaS"
+        capabilities:
+          - description: Supports the basic lifecycle of Bare Metal nodes
+            example: AWS EC2/Forge
+            tests:
+              - summary: Create a Bare Metal node
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#49 (closed)"
+                req_id: CNP01
+                test_id: CNP01-01
+                status: approved
+                notes: ""
+              - summary: "Supports the basic lifecycle of Bare Metal nodes, following the standard CRUD pattern"
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#51 (closed)"
+                  - "#52 (closed)"
+                req_id: CNP01, CNP04
+                test_id: CNP01-02
+                status: approved
+              - summary: Delete a Bare Metal node
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#53 (closed)"
+                req_id: CNP01
+                test_id: CNP01-03
+                status: approved
+                notes: ""
+              - summary: Confirm sanitization on delete - Tenant View
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#54 (closed)"
+                  - "#47 (closed)"
+                req_id: SEC21
+                test_id: SEC21-01
+                status: approved
+                notes: ""
+              - summary: Confirm sanitization on delete - Low Level
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                github_issues:
+                  - "#134 (open)"
+                req_id: SEC21
+                test_id: SEC21-02
+                status: approved
+                notes: ""
+              - summary: Topology-based placement
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M3
+                github_issues:
+                  - "#105 (closed)"
+                req_id: CNP01
+                test_id: CNP01-04
+                status: approved
+                notes: ""
+              - summary: Node attached storage
+                notes: REVIEW
+                req_id: ""
+                test_id: BMAAS-XX-01
+                status: pending
+                priority: ""
+              - summary: "Storage: Config/default/access to local NVME drives"
+                notes: REVIEW
+                req_id: ""
+                test_id: BMAAS-XX-02
+                status: pending
+                priority: ""
+          - description: Once created, nodes can be accessed for usage, and have the high level support controls of reboot, reinstall.
+            example: AWS EC2/Forge
+            tests:
+              - summary: A running node can be accessed via SSH/Teleport for further configuration (Bare Metal)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#48 (closed)"
+                  - "#56 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-03
+                status: approved
+                notes: ""
+              - summary: A running node can be rebooted in case of issue (Bare Metal)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M1
+                github_issues:
+                  - "#50 (closed)"
+                  - "#57 (closed)"
+                req_id: CNP01
+                test_id: CNP01-05
+                status: approved
+                notes: ""
+              - summary: A running node can be power-cycled in case of issue
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                github_issues:
+                  - "#135 (closed)"
+                req_id: CNP01
+                test_id: CNP01-06
+                status: approved
+                notes: ""
+              - summary: "DEPRECATED: A node can be reinstalled from its configured stock operating system"
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#58 (closed)"
+                  - "#69 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-04
+                status: approved
+                notes: ""
+              - summary: A running node can be powered off (Without being destroyed)
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M3
+                github_issues:
+                  - "#106 (closed)"
+                req_id: CNP01
+                test_id: CNP01-07
+                status: approved
+              - summary: Support for cloud-init and instance metadata discovery via link-local addresses (e.g. 169.254.169.254) or virtual devices (Bare Metal)
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#107 (closed)"
+                  - "#113 (closed)"
+                req_id: BOOT02
+                test_id: BOOT02-01
+                status: approved
+              - summary: A powered off node can be powered back on
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M3
+                github_issues:
+                  - "#108 (closed)"
+                req_id: CNP01
+                test_id: CNP01-08
+                status: approved
+              - summary: Support for user-defined tags/labels and cloud-init metadata on instances. (Bare Metal)
+                labels:
+                  - min_req
+                notes: MinAPI
+                dependencies:
+                  - LimitedEnv
+                milestone: M3 .5
+                req_id: CNP05
+                test_id: CNP05-01
+                status: approved
+                priority: P0
+                github_issues:
+                  - "#112 (closed)"
+                  - "#181 (closed)"
+          - description: Nodes will be able to access expected resources on the local networks
+            example: AWS EC2/Forge
+            tests:
+              - summary: Check the health and status of the DPU on instantiation
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M4
+                github_issues:
+                  - "#136 (open)"
+                req_id: ""
+                test_id: BMAAS-XX-05
+                status: approved
+                notes: ""
+              - summary: Nodes can communicate across ethernet, infiniband, and NVLink (Bare Metal)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#60 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-06
+                status: approved
+                notes: ""
+          - description: "Observability & Debug"
+            example: AWS EC2/Forge
+            tests:
+              - summary: Check for any per-host status log over time.
+                notes: REVIEW
+                priority: P1
+                milestone: M5
+                req_id: ""
+                test_id: BMAAS-XX-07
+                status: approved
+                github_issues:
+                  - "#250 (open)"
+              - summary: Serial console access is required (read-only sufficient, interactive preferred) (Bare Metal)
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M3
+                github_issues:
+                  - "#109 (closed)"
+                  - "#114 (closed)"
+                req_id: CNP06
+                test_id: CNP06-01
+                status: approved
+                notes: ""
+              - summary: Verify NVIDIA hardware
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#61 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-08
+                status: approved
+                notes: ""
+              - summary: GPU Stress workload (Bare Metal)
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#63 (closed)"
+                  - "#68 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-09
+                status: approved
+                notes: ""
+              - summary: Nim Inference jobs (Bare Metal)
+                labels:
+                  - min_req
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#64 (closed)"
+                  - "#82 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-10
+                status: approved
+              - summary: NCCL tests
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#65 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-11
+                status: approved
+                notes: ""
+              - summary: Training workload test
+                labels:
+                  - min_req
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#66 (closed)"
+                req_id: ""
+                test_id: BMAAS-XX-12
+                status: approved
+              - summary: Verify that serial console output is logged and queryable for at least 1 month of history
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#258 (open)"
+                req_id: CNP06
+                test_id: CNP06-02
+                status: pending
+          - description: Stable Identifiers
+            tests:
+              - summary: Verify that a BM node's ID does not change after a reboot
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#197 (open)"
+                  - "#196 (open)"
+                  - "#185 (closed)"
+                req_id: CNP08
+                test_id: CNP08-01
+                status: pending
+              - summary: Verify that a BM node's ID does not change after a maintenance/reprovision event
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: CNP08
+                test_id: CNP08-02
+                status: pending
+      - name: "Compute Service: VMaaS"
+        capabilities:
+          - description: Supports the basic lifecycle of VM nodes
+            tests:
+              - summary: Create a VM node
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#42 (closed)"
+                req_id: CNP01
+                test_id: CNP01-09
+                status: approved
+                notes: ""
+              - summary: Get info about a specific VM node, including if it is ready for use
+                notes: ""
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M2
+                github_issues:
+                  - "#51 (closed)"
+                req_id: CNP01, CNP04
+                test_id: CNP01-10
+                status: approved
+              - summary: Get a list of all VM nodes in a VPC
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                github_issues:
+                  - "#45 (closed)"
+                req_id: CNP01
+                test_id: CNP01-11
+                status: approved
+                notes: ""
+              - summary: Delete a VM node
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#46 (closed)"
+                req_id: CNP01
+                test_id: CNP01-12
+                status: approved
+                notes: ""
+              - summary: Confirm sanitization on delete
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#47 (closed)"
+                req_id: SEC21
+                test_id: SEC21-03
+                status: approved
+                notes: ""
+          - description: Once created, VM nodes can be accessed for usage, and have the high level support controls of reboot, reinstall
+            tests:
+              - summary: A running node can be accessed via SSH/Teleport for further configuration (VM)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: VMAAS-XX-01
+                status: approved
+                notes: ""
+              - summary: A running node can be rebooted in case of issue (VM)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: CNP01
+                test_id: CNP01-13
+                status: approved
+                notes: ""
+              - summary: "DEPRECATED: A node can be reinstalled from its configured stock operating system"
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                req_id: ""
+                test_id: VMAAS-XX-02
+                status: pending
+                notes: ""
+              - summary: A running VM can be stopped (Without being destroyed)
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M3
+                github_issues:
+                  - "#110 (closed)"
+                req_id: CNP01
+                test_id: CNP01-14
+                status: approved
+              - summary: A powered off VM can be started
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M3
+                github_issues:
+                  - "#111 (closed)"
+                req_id: CNP01
+                test_id: CNP01-15
+                status: approved
+              - summary: Support for user-defined tags/labels and cloud-init metadata on instances. (VM)
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M3
+                github_issues:
+                  - "#112 (closed)"
+                req_id: CNP05
+                test_id: CNP05-02
+                status: approved
+              - summary: Support for cloud-init and instance metadata discovery via link-local addresses (e.g. 169.254.169.254) or virtual devices (VM)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#113 (closed)"
+                req_id: BOOT02
+                test_id: BOOT02-02
+                status: approved
+                notes: ""
+          - description: Quota should be enforced
+            tests:
+              - summary: Noisy Neighbor CPU/GPU tests
+                priority: P2
+                req_id: ""
+                test_id: VMAAS-XX-03
+                status: approved
+                notes: ""
+              - summary: Tenant cannot allocate more VMs than their quota allows
+                priority: P2
+                req_id: ""
+                test_id: VMAAS-XX-04
+                status: approved
+                notes: ""
+          - description: The underlying system allows VMs to access the GPU, with high performance, and are running with the correct parameters for optimal performance
+            tests:
+              - summary: Check that the host OS is a known acceptable image (like Ubuntu/DGXOS)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#55 (closed)"
+                req_id: ""
+                test_id: VMAAS-XX-05
+                status: approved
+                notes: ""
+              - summary: Check that the GPU is visible and accessible from the VM
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#59 (closed)"
+                req_id: ""
+                test_id: VMAAS-XX-06
+                status: approved
+                notes: ""
+              - summary: Check that the correct Linux Kernel, libvirt, sbios, and NVIDIA drivers are installed
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#62 (closed)"
+                req_id: ""
+                test_id: VMAAS-XX-07
+                status: approved
+                notes: ""
+              - summary: Check that vEGM is configured correctly
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                req_id: ""
+                test_id: VMAAS-XX-08
+                status: approved
+                notes: ""
+              - summary: Check that vCPU pinning is set correctly, PCI bus is configured correctly
+                notes: Does this include GPU Passthrough
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#67 (closed)"
+                req_id: ""
+                test_id: VMAAS-XX-09
+                status: approved
+              - summary: "TODO: More things from the \"NVIDIA Grace I/O Virtualization Guide\""
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                milestone: M5
+                req_id: ""
+                test_id: VMAAS-XX-10
+                status: approved
+                notes: ""
+          - description: Can run AI/ML Jobs
+            tests:
+              - summary: GPU Stress workload (VM)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: VMAAS-XX-11
+                status: approved
+                notes: ""
+              - summary: Nim Inference jobs (VM)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M1
+                req_id: ""
+                test_id: VMAAS-XX-12
+                status: approved
+                notes: ""
+              - summary: Run NCCL tests
+                priority: P0
+                milestone: M5
+                req_id: ""
+                test_id: VMAAS-XX-13
+                status: approved
+                notes: ""
+          - description: nodes will be able to access expected resources on the local networks
+            example: AWS EC2/Forge
+            tests:
+              - summary: Nodes can communicate across ethernet, infiniband, and NVLink (VM)
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M5
+                req_id: ""
+                test_id: VMAAS-XX-14
+                status: approved
+                notes: ""
+          - description: "Observability & Debug"
+            tests:
+              - summary: Serial console access is required (read-only sufficient, interactive preferred) (VM)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#114 (closed)"
+                req_id: CNP06
+                test_id: CNP06-03
+                status: approved
+                notes: ""
+          - description: Stable Identifiers
+            tests:
+              - summary: Verify that a VM's ID does not change after a stop/start cycle
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#198 (open)"
+                req_id: CNP08
+                test_id: CNP08-03
+                status: pending
+              - summary: Verify that a VM's ID does not change after a live migration or maintenance event
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: CNP08
+                test_id: CNP08-04
+                status: pending
+          - description: VM Hardening
+            tests:
+              - summary: Verify console access is restricted via RBAC
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#256 (open)"
+                req_id: CNP01
+                test_id: CNP01-16
+                status: pending
+              - summary: Verify USB, clipboard, and unnecessary virtual devices are disabled
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#257 (open)"
+                req_id: CNP01
+                test_id: CNP01-17
+                status: pending
+      - name: SDN Controller
+        capabilities:
+          - description: Controls software-defined networking overlays and fabric behavior to match the compute-on-demand requirements. Enables network segmentation, isolation, dynamic network configuration, and security groups.
+            tests:
+              - summary: Create a VPC
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#11 (closed)"
+                req_id: SDN01
+                test_id: SDN01-01
+                status: approved
+                notes: ""
+              - summary: Retrieve a VPC
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#12 (closed)"
+                req_id: SDN01
+                test_id: SDN01-02
+                status: approved
+                notes: ""
+              - summary: Update a VPC
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#13 (closed)"
+                req_id: SDN01
+                test_id: SDN01-03
+                status: approved
+                notes: ""
+              - summary: Delete a VPC
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#14 (closed)"
+                req_id: SDN01
+                test_id: SDN01-04
+                status: approved
+                notes: ""
+              - summary: Verify that a VPC has an exclusive subnet
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#16 (closed)"
+                req_id: SDN04
+                test_id: SDN04-01
+                status: approved
+                notes: ""
+              - summary: Verify that nodes in two VPCs cannot communicate over the N/S (TAN) network
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#17 (closed)"
+                  - "#18 (closed)"
+                req_id: SDN04
+                test_id: SDN04-02
+                status: approved
+                notes: ""
+              - summary: Verify that nodes in two VPCs cannot communicate over the E/W (CIN) network
+                labels:
+                  - min_req
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#18 (closed)"
+                req_id: SDN04
+                test_id: SDN04-03
+                status: approved
+                notes: ""
+              - summary: Support non-conflicting Bring-Your-Own-IP (including 7.0.0.0/8)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#115 (closed)"
+                req_id: NET03, SDN01
+                test_id: NET03-01
+                status: approved
+                notes: ""
+              - summary: Support Stable Private IP allocations, where if a VM crashes and restarts the same IP address remains pinned until the node is deleted
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#116 (closed)"
+                req_id: ""
+                test_id: SDN-XX-01
+                status: approved
+                notes: ""
+              - summary: "Atomically switch a floating private IP between nodes via API within <10 seconds without requiring an instance reboot."
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#117 (closed)"
+                req_id: SDN05
+                test_id: SDN05-01
+                status: approved
+                notes: ""
+              - summary: "Localized DNS: Support for custom, localized DNS settings to enable internal domain resolution to private endpoints (e.g. storage endpoints)"
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#118 (closed)"
+                req_id: SDN06
+                test_id: SDN06-01
+                status: approved
+                notes: ""
+              - summary: "Support for VPC peering with full bandwidth and no \"hairpin\" routing."
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M3
+                github_issues:
+                  - "#119 (closed)"
+                req_id: SDN07
+                test_id: SDN07-01
+                status: approved
+                notes: ""
+              - summary: Create a Security Group
+                labels:
+                  - min_req
+                notes: ""
+                req_id: SDN02, SDN03
+                test_id: SDN02-01
+                status: approved
+                priority: P0
+                github_issues:
+                  - "#199 (open)"
+                  - "#171 (closed)"
+                  - "#178 (closed)"
+              - summary: Retrieve a Security Group/list Security Groups
+                labels:
+                  - min_req
+                notes: ""
+                req_id: SDN02, SDN03
+                test_id: SDN02-02
+                status: approved
+                priority: P0
+                github_issues:
+                  - "#200 (open)"
+              - summary: Update a Security Group
+                labels:
+                  - min_req
+                notes: ""
+                req_id: SDN02, SDN03
+                test_id: SDN02-03
+                status: approved
+                priority: P0
+                github_issues:
+                  - "#201 (open)"
+              - summary: Delete a Security Group
+                labels:
+                  - min_req
+                notes: ""
+                req_id: SDN02, SDN03
+                test_id: SDN02-04
+                status: approved
+                priority: P0
+                github_issues:
+                  - "#202 (open)"
+              - summary: NVLink Partitioning
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                github_issues:
+                  - "#19 (closed)"
+                req_id: CNP03
+                test_id: CNP03-01
+                status: approved
+                notes: ""
+              - summary: "NVLink: Create a new partition; verify success response with partition key."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-02
+                status: approved
+                notes: ""
+              - summary: "NVLink: List partitions; retrieve a specific partition by partition ID"
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-03
+                status: approved
+                notes: ""
+              - summary: "NVLink: Delete an empty partition (no instances); retrieve by ID and verify not found."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-04
+                status: approved
+                notes: ""
+              - summary: "NVLink: Create a partition, create instance in that partition, make sure the instance becomes ready, delete instance, verify GPUs removed from partition."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-05
+                status: approved
+                notes: ""
+              - summary: "NVLink: Create partition, create 2 instances, verify both share the same nvlink_partition_id and both GPUs are reported for that partition"
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-06
+                status: approved
+                notes: ""
+              - summary: "IMEX: Assert nvidia-imex and nvidia-imex-ctl packages are installed and nvidia-imex.service unit is registered with systemd."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-07
+                status: approved
+                notes: ""
+              - summary: "IMEX: Start nvidia-imex via systemctl start nvidia-imex and assert the service reaches active/ready state."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-08
+                status: approved
+                notes: ""
+              - summary: "IMEX: Stop nvidia-imex via systemctl stop nvidia-imex and assert clean shutdown (other nodes show disabled node status)."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-09
+                status: approved
+                notes: ""
+              - summary: "IMEX: Enable IMEX at boot with systemctl enable nvidia-imex, reboot, and confirm IMEX starts automatically."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-10
+                status: approved
+                notes: ""
+              - summary: "IMEX: After all nodes start IMEX, query domain state via nvidia-imex-ctl -N and assert state is UP, fully connected matrix"
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-11
+                status: approved
+                notes: ""
+              - summary: "IMEX: With IMEX_ENABLE_AUTH_ENCRYPTION=0, form a multi-node domain and assert connectivity without any auth/encryption."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-12
+                status: approved
+                notes: ""
+              - summary: "IMEX: Enable IMEX_ENABLE_AUTH_ENCRYPTION=1 with SSL_TLS mode, provide valid server/client certs, and assert mutual authentication and encrypted communication."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-13
+                status: approved
+                notes: ""
+              - summary: "IMEX: Enable GSSAPI/Kerberos mode (GSS_AUTH_ENCRYPT), configure KDC/keytabs, and assert mutual auth + encryption between nodes."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-14
+                status: approved
+                notes: ""
+              - summary: "IMEX: IMEX/K8s: Submit a workload requesting a ComputeDomain; assert ComputeDomain pods are created on each allocated node."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-15
+                status: approved
+                notes: ""
+              - summary: "IMEX: From workload pods in a ComputeDomain run nvbandwidth-test-job"
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-16
+                status: approved
+                notes: ""
+              - summary: "IMEX: After workload completes, assert ComputeDomain and associated IMEX resources are cleaned up."
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: SDN-XX-17
+                status: approved
+                notes: ""
+              - summary: Redundant Gateways
+                notes: REVIEW
+                req_id: ""
+                test_id: SDN-XX-18
+                status: pending
+                priority: ""
+          - description: "Security Group Scope & Timing"
+            tests:
+              - summary: Verify security group rules can be scoped at workload level
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#281 (open)"
+                req_id: SDN02
+                test_id: SDN02-05
+                status: pending
+              - summary: Verify security group rules can be scoped at node level
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#282 (open)"
+                req_id: SDN02
+                test_id: SDN02-06
+                status: pending
+              - summary: Verify security group rules can be scoped at subnet/tenant level
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#283 (open)"
+                req_id: SDN02
+                test_id: SDN02-07
+                status: pending
+              - summary: Measure and verify policy propagation timing is within acceptable bounds
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#284 (open)"
+                req_id: SDN02
+                test_id: SDN02-08
+                status: pending
+              - summary: Verify security group rules can be scoped at K8s API service level
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#285 (open)"
+                req_id: SDN02
+                test_id: SDN02-09
+                status: pending
+          - description: All-to-All Storage Routing
+            tests:
+              - summary: Verify that storage hosts can route to each other with all-to-all L3 communication
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#289 (open)"
+                req_id: SDN08
+                test_id: SDN08-01
+                status: pending
+          - description: Port Security
+            tests:
+              - summary: Verify customizable port security policies can be applied to virtual interfaces
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#286 (open)"
+                req_id: SDN02
+                test_id: SDN02-10
+                status: pending
+          - description: Network Infrastructure Observability
+            tests:
+              - summary: Verify logging is available for network hardware faults
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#290 (open)"
+                req_id: SDN09
+                test_id: SDN09-01
+                status: pending
+              - summary: Verify logging captures latency/performance fluctuations
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#291 (open)"
+                req_id: SDN09
+                test_id: SDN09-02
+                status: pending
+              - summary: Verify a detailed audit trail exists for all configuration changes to network filtering rules
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#292 (open)"
+                req_id: SDN09
+                test_id: SDN09-03
+                status: pending
+      - name: Metadata Service
+        capabilities:
+          - description: shared service source of truth for resource metadata such as nodes, GPUs, topology, and ownership. Enables scheduling, automation, and lifecycle management.
+            example: GCP Resource Manager APIs
+            tests:
+              - summary: TODO
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                milestone: M4
+                req_id: ""
+                test_id: META-XX-01
+                status: approved
+                notes: ""
+      - name: Cloud Control Plane
+        capabilities:
+          - description: Primary access mechanism for IaaS, provding provision and manage of compute, networking, and storage.
+            example: AWS EC2 Control Plane
+            tests:
+              - summary: Needs to have an API we can access from our tests to do actions
+                priority: P0
+                milestone: M4
+                req_id: ""
+                test_id: CTRL-XX-01
+                status: approved
+                notes: ""
+              - summary: "Verify that fleet management API provides full set of information requested below: Node ID (Unique identifier for a GPU node) Health State (Healthy/Unhealthy classification) Instance ID (Identifier for virtual workload) Creation Timestamp (Time workload/node was created) Hardware Type (Descriptor for the hardware model) GPU Count (Number of GPUs per node) Top-levelAccount/ID (Identifier for the top-level organization/account) Sub-LevelProject/ID (Identifier for the nested project/sub-account) In Use (True/False status indicating if the GPU Node is turned on and in use) Region (Region of the data center where nodes are deployed)"
+                req_id: CAP02
+                test_id: CAP02-01
+                status: approved
+                notes: ""
+                priority: ""
+                github_issues:
+                  - "#203 (open)"
+              - summary: "Resource discovery API: newly delivered capacity must be discoverable. This \"Resource Index\" must provide a stable resource identifer."
+                req_id: CAP03
+                test_id: CAP03-01
+                status: approved
+                notes: ""
+                priority: ""
+                github_issues:
+                  - "#204 (open)"
+          - description: Stable Identifiers (Switches/Infrastructure)
+            tests:
+              - summary: Verify that switch identifiers are stable across reboots and firmware updates
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#205 (open)"
+                req_id: CNP08
+                test_id: CNP08-05
+                status: pending
+      - name: Load Balancing
+        capabilities:
+          - description: Distributes traffic across services (e.g. inference endpoints) for availability and scale.
+            example: AWS Network Load Balancer
+            tests:
+              - summary: CRUD a load balancer
+                priority: P2
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: LB-XX-01
+                status: approved
+                notes: ""
+              - summary: Verify that traffic is distributed across multiple nodes
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: LB-XX-02
+                status: approved
+                notes: ""
+              - summary: Verify that nodes can be marked as down or up (for rolling deployments/etc)
+                req_id: ""
+                test_id: LB-XX-03
+                status: approved
+                notes: ""
+              - summary: Verify that no traffic is dropped during outages
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: LB-XX-04
+                status: approved
+                notes: ""
+      - name: Break-Fix
+        capabilities:
+          - description: A break-fix service works with a variety of components to detect, triage, remediate, and validate nodes in an AI factory. The critical focus here is on the GPU nodes, but the system can scale beyond.
+            example: Lazarus, Shoreline
+            tests:
+              - summary: Check that GPUd or Sentinel is running
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: BFX-XX-01
+                status: approved
+                notes: ""
+              - summary: Verify that Tenants can be notified, by some communication system, of planned future node maintenance
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: BFX-XX-02
+                status: approved
+                notes: ""
+              - summary: Verify that Tenants can be notified, by some communication system, of immediate node failure
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: BFX-XX-03
+                status: approved
+                notes: ""
+          - description: Breakfix API Lifecycle
+            tests:
+              - summary: Reset GPUs on an individual node via the Breakfix API
+                labels:
+                  - min_req
+                priority: P2
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#206 (open)"
+                req_id: BFX01
+                test_id: BFX01-01
+                status: pending
+              - summary: Return an individual node to the provider for maintenance via the API
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#207 (open)"
+                req_id: BFX01
+                test_id: BFX01-02
+                status: pending
+              - summary: Return a rack to the provider for maintenance via the API
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#208 (open)"
+                req_id: BFX01
+                test_id: BFX01-03
+                status: pending
+              - summary: Cordon a node (mark unschedulable); verify no new workloads are placed; verify existing workloads continue
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#209 (open)"
+                req_id: BFX01
+                test_id: BFX01-04
+                status: pending
+              - summary: Request a host replacement when health thresholds are breached; verify the node is removed from the pool
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#210 (open)"
+                req_id: BFX01
+                test_id: BFX01-05
+                status: pending
+          - description: Breakfix Events Query
+            tests:
+              - summary: Query upcoming/current maintenance events for a node
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#211 (open)"
+                req_id: BFX02
+                test_id: BFX02-01
+                status: pending
+              - summary: Query retirement notices for a node/rack
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#212 (open)"
+                req_id: BFX02
+                test_id: BFX02-02
+                status: pending
+              - summary: Query historical repair status for a node
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#213 (open)"
+                req_id: BFX02
+                test_id: BFX02-03
+                status: pending
+          - description: Breakfix Diagnostics
+            tests:
+              - summary: Query serial numbers of installed hardware (chassis, baseboard, NICs, CPU, GPU) — obfuscated but stable IDs are OK
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#320 (open)"
+                req_id: BFX03
+                test_id: BFX03-01
+                status: pending
+              - summary: Inspect firmware versions of NV switch trays
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#214 (open)"
+                req_id: BFX03
+                test_id: BFX03-02
+                status: pending
+              - summary: Obtain BMC kernel log messages for a node
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#215 (open)"
+                req_id: BFX03
+                test_id: BFX03-03
+                status: pending
+  - name: Data Services
+    components:
+      - name: SDS Controller
+        capabilities:
+          - description: Manages software-defined storage services and policies. Orchestrates provisioning, tiers, and resiliency.
+            example: "AWS: EBS + FSx backend control planes"
+            tests:
+              - summary: Verify storage provisioning via vendor/NCP API
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#327 (open)"
+                req_id: HSS01
+                test_id: HSS01-01
+                status: pending
+              - summary: Verify QoS — provisioned throughput meets requested minimum bandwidth and IOPS
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#328 (open)"
+                req_id: HSS02
+                test_id: HSS02-01
+                status: pending
+              - summary: Verify K8s CSI integration for storage
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#329 (open)"
+                req_id: HSS03, K8S23
+                test_id: HSS03-01
+                status: pending
+              - summary: Verify quota limits can be set on user workloads/volumes
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#330 (open)"
+                req_id: HSS04
+                test_id: HSS04-01
+                status: pending
+              - summary: Verify non-disruptive upgrades (NVIDIA can defer maintenance up to 2 weeks)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#331 (open)"
+                req_id: HSS05
+                test_id: HSS05-01
+                status: pending
+              - summary: "Storage: Config/default/access to network provided storage"
+                notes: REVIEW
+                req_id: ""
+                test_id: STOR-XX-01
+                status: pending
+          - description: Home Directory Storage
+            tests:
+              - summary: Verify NFS protocol shared storage is available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#326 (open)"
+                req_id: DIR02
+                test_id: DIR02-01
+                status: pending
+              - summary: Verify configurable filesystem-wide quota limits
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#324 (open)"
+                req_id: DIR01
+                test_id: DIR01-01
+                status: pending
+              - summary: Verify usage accounting for uid/gids
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#325 (open)"
+                req_id: DIR01
+                test_id: DIR01-02
+                status: pending
+          - description: Data Movement
+            tests:
+              - summary: Verify a dedicated K8s cluster (or ability to create one) for the data mover stack
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#263 (open)"
+                req_id: DMS01
+                test_id: DMS01-01
+                status: pending
+              - summary: Verify dedicated CPU nodes are available for data mover with high-performance networking
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#264 (open)"
+                req_id: DMS02
+                test_id: DMS02-01
+                status: pending
+              - summary: Verify the same filesystem mounted on GPU nodes is accessible from data mover nodes
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#265 (open)"
+                req_id: DMS03
+                test_id: DMS03-01
+                status: pending
+              - summary: Verify stable egress IP for allowlisting access to NVIDIA services
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#266 (open)"
+                req_id: DMS05
+                test_id: DMS05-01
+                status: pending
+          - description: DGXC-Managed Storage Deployment
+            tests:
+              - summary: Verify optional skip-sanitization flag during break/fix where tenancy doesn't change
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#358 (open)"
+                req_id: STG02
+                test_id: STG02-01
+                status: pending
+              - summary: Verify stable IP assignment for storage nodes across lifecycle operations
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#359 (open)"
+                req_id: STG03
+                test_id: STG03-01
+                status: pending
+              - summary: Verify out-of-band failure detection (device, network, memory, drive)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#360 (open)"
+                req_id: STG04
+                test_id: STG04-01
+                status: pending
+              - summary: Verify topology observability — visibility into failure domains for physical diversity
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#361 (open)"
+                req_id: STG05
+                test_id: STG05-01
+                status: pending
+          - description: Storage Security
+            tests:
+              - summary: Verify least-privilege access policies (resource-based, user-based, network-based)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#296 (open)"
+                req_id: SEC04
+                test_id: SEC04-01
+                status: pending
+          - description: RDMA Memory Protection
+            tests:
+              - summary: Verify storage systems using RDMA enforce memory protection via authorization keys for both local and remote access
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#332 (open)"
+                req_id: HSS06
+                test_id: HSS06-01
+                status: pending
+      - name: Parallel File System Services
+        capabilities:
+          - description: high performance file system optimized for AI and HPC workloads
+            tests:
+              - summary: Verify that a parallel high-speed filesystem can be provisioned via API
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#333 (open)"
+                req_id: HSS07
+                test_id: HSS07-01
+                status: pending
+              - summary: "Verify multiple filesystems can exist within total capacity (minimum FS size <= 50 TiB)"
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#334 (open)"
+                req_id: HSS09
+                test_id: HSS09-01
+                status: pending
+              - summary: Verify live filesystem expansion (capacity, inodes, IO, metadata)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#335 (open)"
+                req_id: HSS10
+                test_id: HSS10-01
+                status: pending
+              - summary: Verify uid/gid/project-id soft and hard quotas with enforcement
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#336 (open)"
+                req_id: HSS12
+                test_id: HSS12-01
+                status: pending
+              - summary: Verify root-squash can be enabled and disabled at any time
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#337 (open)"
+                req_id: HSS13
+                test_id: HSS13-01
+                status: pending
+              - summary: Verify the filesystem can be mounted with flock
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#338 (open)"
+                req_id: HSS14
+                test_id: HSS14-01
+                status: pending
+              - summary: Verify changelog/audit data is accessible (tracking by uid/gid, file/dir operations)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#339 (open)"
+                req_id: HSS15
+                test_id: HSS15-01
+                status: pending
+              - summary: Verify client multipathing to all storage servers
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#340 (open)"
+                req_id: HSS18
+                test_id: HSS18-01
+                status: pending
+      - name: Object Storage Service
+        capabilities:
+          - description: durable, scalable object storage for things like datasets, model artifacts, logs, backups.
+            example: S3
+            tests:
+              - summary: Verify S3-compatible API access with authenticated endpoints
+                labels:
+                  - min_req
+                priority: P2
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#262 (open)"
+                req_id: ""
+                test_id: DATASVC-XX-01
+                status: pending
+      - name: Block Storage Services
+        capabilities:
+          - description: persistent block volumes for a wide range of uses
+            example: AWS EBS, GCP Persistent Disk
+            tests:
+              - summary: Verify dynamic volume provisioning via CSI
+                labels:
+                  - min_req
+                priority: P2
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#272 (open)"
+                req_id: K8S23
+                test_id: K8S23-01
+                status: pending
+              - summary: Verify volume snapshots
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#321 (open)"
+                req_id: ""
+                test_id: DATASVC-XX-02
+                status: pending
+              - summary: Verify volume resizing
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#322 (open)"
+                req_id: ""
+                test_id: DATASVC-XX-03
+                status: pending
+              - summary: Verify persistent block volumes survive instance restarts
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#323 (open)"
+                req_id: ""
+                test_id: DATASVC-XX-04
+                status: pending
+      - name: Cache Services
+        capabilities:
+          - description: in-memory data store for frequently used data
+            example: ElastiCache
+            tests:
+              - summary: Create a managed cache instance, write a key-value pair, read it back, verify data integrity
+                priority: P2
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: DATASVC-XX-05
+                status: pending
+                notes: ""
+      - name: Vector Store
+        capabilities:
+          - description: stores and indexes embeddings for semantic search and RAG generation
+            example: Vertex AI Vector Search
+            tests:
+              - summary: Create a vector store, insert an embedding, perform similarity search, verify result
+                priority: P2
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: DATASVC-XX-06
+                status: pending
+                notes: ""
+      - name: Relational Database
+        capabilities:
+          - description: structured database (SQL) service
+            example: GCP Cloud SQL
+            tests:
+              - summary: Create a managed SQL database, create a table, insert/query data, verify results
+                priority: P2
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: DATASVC-XX-07
+                status: pending
+                notes: ""
+  - name: Workload Orchestration
+    components:
+      - name: Backup and Recovery
+        capabilities:
+          - description: Centralized managed service to automate and govern data backup across services
+            example: AWS backup
+            tests:
+              - summary: Create a backup of a block volume, delete original, restore from backup, verify data is the same as the original
+                priority: P2
+                milestone: M4
+                req_id: ""
+                test_id: DATASVC-XX-08
+                status: pending
+                notes: ""
+      - name: Model Registry
+        capabilities:
+          - description: storage with versioning for models and AI artifacts
+            example: AWS Sagemaker Model Registry
+            tests:
+              - summary: Push a model artifact with a version tag, retrieve by version, verify it matches (prefer a smaller reference model)
+                priority: P2
+                req_id: ""
+                test_id: DATASVC-XX-09
+                status: pending
+                notes: ""
+      - name: Slurm Control Plane
+        capabilities:
+          - description: control plane to schedule and manage large-scale GPU batch training with SLURM semantics.
+            example: AWS ParallelCluster
+            tests:
+              - summary: Create a SLURM instance using the software platform
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-01
+                status: done
+              - summary: SlurmInfoAvailable
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-02
+                status: done
+              - summary: SlurmPartition cpu and gpu
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-03
+                status: done
+              - summary: SlurmJobSubmission
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-04
+                status: done
+              - summary: SlurmGpuAllocation 1gpu and 2gpu
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-05
+                status: done
+              - summary: SlurmNodeJobExecution cpu and gpu
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-06
+                status: done
+              - summary: SlurmGpuStressWorkload
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-07
+                status: done
+              - summary: SlurmNcclMultiNodeWorkload
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-08
+                status: done
+              - summary: SlurmSbatchWorkload gpu and cpu
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-09
+                status: done
+              - summary: SlurmSbatchWorkload-inline
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: SLURM-XX-10
+                status: done
+      - name: Managed Kubernetes Control Plane
+        capabilities:
+          - description: Tenant-isolated Kubernetes control planes for managing k8s workloads. does placement, networking, lifecyle mgmt.
+            example: AWS EKS, GCP GKE
+            tests:
+              - summary: Create a K8s Instance using the software platform (CLI, Terraform)
+                labels:
+                  - min_req
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: K8S05
+                test_id: K8S05-01
+                status: done
+          - description: Full lifecycle management
+            tests:
+              - summary: Run through all the steps of the k8s lifecycle management, including user-initated CP update
+                labels:
+                  - min_req
+                milestone: M4
+                req_id: ""
+                test_id: K8S-XX-01
+                status: approved
+                notes: ""
+              - summary: The control plane should automatically add more capacity when load increases
+                labels:
+                  - min_req
+                req_id: SEC23
+                test_id: SEC23-01
+                status: pending
+                notes: ""
+                priority: ""
+              - summary: Pin Control Plane instances to a specific count to handle a particular load-limit
+                labels:
+                  - min_req
+                req_id: K8S27
+                test_id: K8S27-01
+                status: pending
+                notes: ""
+                github_issues:
+                  - "#217 (open)"
+          - description: Control Plane Isolation
+            tests:
+              - summary: per tenant k8s control plane outside of the tenant cluster/VPC
+                labels:
+                  - min_req
+                milestone: M4
+                req_id: K8S14
+                test_id: K8S14-01
+                status: approved
+                notes: ""
+              - summary: Be able to run k8s workloads
+                labels:
+                  - min_req
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: K8S-XX-02
+                status: done
+              - summary: K8s Nim Inference
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: K8S-XX-03
+                status: done
+              - summary: K8s Nim Helm
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: K8S-XX-04
+                status: done
+          - description: Topology based placement
+            tests:
+              - summary: K8s Nccl
+                labels:
+                  - min_req
+                priority: P0
+                req_id: ""
+                test_id: K8S-XX-05
+                status: approved
+                notes: ""
+          - description: k8s upstream proxy
+            tests:
+              - summary: validate adherence to upstream proxy requirements (service to pod load balancing, acces to internal services)
+                labels:
+                  - min_req
+                notes: k8s05
+                req_id: ""
+                test_id: K8S-XX-06
+                status: approved
+                priority: P0
+          - description: Dynamic Resource Allocaiton
+            tests:
+              - summary: verify that the k8s cluster supports the DRA API (resources.k8s.io) to get GPUs on the same nvlink
+                labels:
+                  - min_req
+                notes: k8s06/22
+                req_id: K8S24
+                test_id: K8S24-01
+                status: approved
+                priority: P0
+          - description: Run k8s conformance tests
+            tests:
+              - summary: "get versions, topology, core APIs by: (a) pass CNCF k8s conformance: https://github.com/cncf/k8s-conformance (b) add AI conformance: [https://github.com/cncf/k8s-ai-conformance](https://github.com/cncf/k8s-ai-conformance)"
+                labels:
+                  - min_req
+                notes: k8s01
+                req_id: K8S01
+                test_id: K8S01-01
+                status: pending
+                priority: P0
+                github_issues:
+                  - "#233 (open)"
+          - description: k8s service account OIDC
+            tests:
+              - summary: test that the service account can be authorized with OIDC
+                labels:
+                  - min_req
+                req_id: K8S17
+                test_id: K8S17-01
+                status: approved
+                notes: ""
+          - description: Test support for CRDs and Validating/Mutating Admission Controllers (webhooks)
+            tests:
+              - summary: create a CRD, create webhook, and test validation/mutation requirement
+                labels:
+                  - min_req
+                notes: k8s19
+                req_id: K8S21
+                test_id: K8S21-01
+                status: approved
+                priority: P1
+                github_issues:
+                  - "#218 (open)"
+          - description: "TODO: L3 networking logging"
+            tests:
+              - summary: Verify that pod-to-pod L3 traffic flow logs are available and queryable
+                labels:
+                  - min_req
+                notes: K8s16
+                req_id: ""
+                test_id: K8S-XX-07
+                status: approved
+                priority: P1
+          - description: CNI Compliance
+            tests:
+              - summary: Apply a NetworkPolicy; verify pod connectivity is restricted as expected; verify IPv4 and IPv6 addresses are assigned on dual-stack nodes
+                labels:
+                  - min_req
+                notes: K8s20
+                req_id: K8S22
+                test_id: K8S22-01
+                status: approved
+                priority: P0
+                github_issues:
+                  - "#219 (open)"
+          - description: "TODO: Dynamic provisioning, snapshots, and resizing"
+            tests:
+              - summary: "TODO: Helm version"
+                labels:
+                  - min_req
+                notes: K8s21
+                req_id: K8S23
+                test_id: K8S23-02
+                status: approved
+                priority: ""
+              - summary: "TODO: Kustomize version"
+                labels:
+                  - min_req
+                notes: K8s21
+                req_id: K8S23
+                test_id: K8S23-03
+                status: approved
+                priority: ""
+              - summary: Verify CSI supports block, shared filesystem, and NFS storage
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#273 (open)"
+                req_id: K8S23
+                test_id: K8S23-04
+                status: pending
+              - summary: Verify CSI supports both static and dynamic provisioning via PVs and PVCs
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#274 (open)"
+                req_id: K8S23
+                test_id: K8S23-05
+                status: pending
+              - summary: Verify CSI credentials are tenant cluster scoped (no cross-cluster access)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#275 (open)"
+                req_id: K8S23
+                test_id: K8S23-06
+                status: pending
+              - summary: Verify APIs to query storage usage against overall cluster quota with per-PVC/Volume breakdown
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#276 (open)"
+                req_id: K8S23
+                test_id: K8S23-07
+                status: pending
+          - description: NVIDIA Operator support
+            tests:
+              - summary: "TODO: Compatibility with the mainline NVIDIA GPU Operator"
+                labels:
+                  - min_req
+                notes: K8S23
+                req_id: K8S25
+                test_id: K8S25-01
+                status: approved
+                priority: P0
+              - summary: Verify provider-default accelerator operators and drivers can be replaced or overridden with tenant-required versions
+                labels:
+                  - min_req
+                notes: ""
+                req_id: K8S25
+                test_id: K8S25-02
+                status: pending
+                priority: P0
+                milestone: M5
+                github_issues:
+                  - "#220 (open)"
+          - description: "K8s Versioning & Compliance"
+            tests:
+              - summary: Verify support for the three most recent minor releases (N-2)
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S02
+                test_id: K8S02-01
+                status: pending
+              - summary: Verify automated control plane security patching with no/minimal downtime
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S02
+                test_id: K8S02-02
+                status: pending
+          - description: Zero-Downtime Upgrades
+            tests:
+              - summary: Perform a minor version control plane upgrade and verify zero application downtime
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S09
+                test_id: K8S09-01
+                status: pending
+              - summary: Perform a rolling node upgrade and verify disruption budgets are respected
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S10
+                test_id: K8S10-01
+                status: pending
+          - description: HA Control Plane
+            tests:
+              - summary: Verify the control plane recovers from a single-node failure
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S11
+                test_id: K8S11-01
+                status: pending
+          - description: "Backup & Disaster Recovery"
+            tests:
+              - summary: Verify backup and recovery within defined RPO/RTO
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S12
+                test_id: K8S12-01
+                status: pending
+          - description: K8s Access Controls
+            tests:
+              - summary: Verify the K8s API endpoint has network access controls (firewall/private link)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#271 (open)"
+                req_id: K8S15
+                test_id: K8S15-01
+                status: pending
+          - description: K8s Encryption
+            tests:
+              - summary: Verify at-rest encryption is enabled for etcd
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: K8S19
+                test_id: K8S19-01
+                status: pending
+          - description: Certificate Management
+            tests:
+              - summary: Verify certificates are rotated on a 60-day cycle
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#301 (open)"
+                req_id: SEC09
+                test_id: SEC09-01
+                status: pending
+              - summary: Verify support for both provider-managed and customer-managed keys
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#302 (open)"
+                req_id: SEC09
+                test_id: SEC09-02
+                status: pending
+          - description: Autoscaling
+            tests:
+              - summary: Verify Cluster Autoscaler integration (upstream)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#267 (open)"
+                req_id: ""
+                test_id: K8S-XX-08
+                status: pending
+          - description: Kubernetes Security Response
+            tests:
+              - summary: Verify NCP participates in the Kubernetes Security Response Committee (SRC) process and can patch disclosed vulnerabilities during embargo
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: INFO
+                github_issues: []
+                req_id: K8S04
+                test_id: K8S04-01
+                status: pending
+          - description: Node Pool Lifecycle Management
+            tests:
+              - summary: Create a K8s node pool via API/CLI specifying node type (CPU or GPU instance type)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#269 (open)"
+                  - "#221 (open)"
+                req_id: K8S06
+                test_id: K8S06-01
+                status: pending
+              - summary: Update a K8s node pool (e.g., scale to a target count)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#270 (open)"
+                  - "#222 (open)"
+                req_id: K8S06
+                test_id: K8S06-02
+                status: pending
+              - summary: Delete a K8s node pool
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#223 (open)"
+                req_id: K8S06
+                test_id: K8S06-03
+                status: pending
+              - summary: Verify default node labels and taints can be specified when a node joins the cluster via node pool
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#224 (open)"
+                req_id: K8S06
+                test_id: K8S06-04
+                status: pending
+          - description: API Server Metrics
+            tests:
+              - summary: Verify API Server metrics are available in a Prometheus-scrapable format for SLO measurement
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#225 (closed)"
+                req_id: K8S07
+                test_id: K8S07-01
+                status: pending
+          - description: Public OIDC Endpoint
+            tests:
+              - summary: Verify the cluster exposes a cluster-specific OIDC Issuer endpoint for workload identity federation
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#226 (closed)"
+                req_id: K8S18
+                test_id: K8S18-01
+                status: pending
+          - description: K8s Control Plane Logging
+            tests:
+              - summary: Verify ability to view or export Kubernetes control plane logs (apiserver, kcm)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#227 (closed)"
+                req_id: K8S20
+                test_id: K8S20-01
+                status: pending
+          - description: K8s Performance
+            tests:
+              - summary: Verify the managed K8s service meets standard Kubernetes performance tests to max cluster size
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#268 (open)"
+                req_id: ""
+                test_id: K8S-XX-09
+                status: pending
+          - description: Multi-Cluster Support
+            tests:
+              - summary: Support multiple clusters in the same tenancy and in the same VPC
+                req_id: K8S26
+                test_id: K8S26-01
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#277 (open)"
+                status: pending
+      - name: Power Policy Management
+        capabilities:
+          - description: Control plane to manage power allocation (re-allocation) based on need and availability
+            example: Boost and Flex (DPS)
+            tests:
+              - summary: TODO
+                priority: P2
+                dependencies:
+                  - MiniCloud
+                req_id: ""
+                test_id: POWER-XX-01
+                status: approved
+                notes: ""
+  - name: "AI Platform & User Access"
+    components:
+      - name: Host API Gateway
+        capabilities:
+          - description: "Service control plane \"front door\" that enforces authn/authz via IAM"
+            example: AWS/GCP API Gateway
+            tests:
+              - summary: TODO
+                priority: P2
+                req_id: ""
+                test_id: APIGW-XX-01
+                status: approved
+                notes: ""
+      - name: Al Platform 1..N Control Planes
+        capabilities:
+          - description: "Placeholder for all AI platform CPs you might run. E.g. Run:ai, NVCF, Redhat Inference Server"
+            tests:
+              - summary: TODO
+                priority: P2
+                req_id: ""
+                test_id: AICP-XX-01
+                status: approved
+                notes: ""
+      - name: Web Management Dashboard
+        capabilities:
+          - description: ""
+            tests:
+              - summary: TODO
+                priority: P2
+                dependencies:
+                  - LimitedEnv
+                milestone: M5
+                req_id: ""
+                test_id: WEBUI-XX-01
+                status: approved
+                notes: ""
+  - name: Observability
+    components:
+      - name: Observability Collectors
+        capabilities:
+          - description: ""
+            tests:
+              - summary: Validate that an OTel endpoint is provided and some data can be pulled from it
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: OBS-XX-01
+                status: done
+              - summary: Logging information about the control plane is available
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: OBS-XX-02
+                status: done
+              - summary: Logging information from instances
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: OBS-XX-03
+                status: done
+              - summary: Alerts can be issued by the system in case of problems
+                notes: ""
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M0
+                req_id: ""
+                test_id: OBS-XX-04
+                status: done
+          - description: Telemetry Delivery
+            tests:
+              - summary: Verify telemetry latency is no longer than 120 seconds
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#342 (open)"
+                req_id: ""
+                test_id: OBS-XX-05
+                status: pending
+          - description: Network Telemetry
+            tests:
+              - summary: Verify telemetry is available for North-South (front-end) network
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#343 (open)"
+                req_id: ""
+                test_id: OBS-XX-06
+                status: pending
+              - summary: Verify telemetry is available for East-West (back-end / GPU interconnect) network
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#344 (open)"
+                req_id: ""
+                test_id: OBS-XX-07
+                status: pending
+              - summary: Verify telemetry is available for Management network
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#345 (open)"
+                req_id: ""
+                test_id: OBS-XX-08
+                status: pending
+              - summary: Verify telemetry is available for NVSwitch Fabric (GB200+)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#346 (open)"
+                req_id: ""
+                test_id: OBS-XX-09
+                status: pending
+              - summary: Verify telemetry is available for Host network (NIC-level)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#347 (open)"
+                req_id: ""
+                test_id: OBS-XX-10
+                status: pending
+          - description: Required Logs
+            tests:
+              - summary: Verify Fabric Manager logs are available (where applicable)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#348 (open)"
+                req_id: ""
+                test_id: OBS-XX-11
+                status: pending
+              - summary: Verify Subnet Manager logs are available (where applicable)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#349 (open)"
+                req_id: ""
+                test_id: OBS-XX-12
+                status: pending
+              - summary: Verify UFM Event logs are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#350 (open)"
+                req_id: ""
+                test_id: OBS-XX-13
+                status: pending
+              - summary: Verify general switch logs are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#351 (open)"
+                req_id: ""
+                test_id: OBS-XX-14
+                status: pending
+              - summary: Verify switch syslogs are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#352 (open)"
+                req_id: ""
+                test_id: OBS-XX-15
+                status: pending
+              - summary: Verify switch kernel logs are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#353 (open)"
+                req_id: ""
+                test_id: OBS-XX-16
+                status: pending
+              - summary: Verify BMC SEL logs are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#354 (open)"
+                req_id: ""
+                test_id: OBS-XX-17
+                status: pending
+              - summary: Verify host syslogs are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#355 (open)"
+                req_id: ""
+                test_id: OBS-XX-18
+                status: pending
+              - summary: Verify VPC Flow logs (all ingress/egress traffic) are available
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#356 (open)"
+                req_id: ""
+                test_id: OBS-XX-19
+                status: pending
+      - name: Telemetry / Data Lakes
+        capabilities:
+          - description: ""
+            tests:
+              - summary: TODO
+                priority: P1
+                dependencies:
+                  - LimitedEnv
+                req_id: ""
+                test_id: TELEM-XX-01
+                status: approved
+                notes: ""
+              - summary: Read only access to a BMaaS system's serial console
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - MiniCloud
+                milestone: M3
+                github_issues:
+                  - "#120 (closed)"
+                req_id: ""
+                test_id: TELEM-XX-02
+                status: approved
+              - summary: Read only access to a VM serial console
+                labels:
+                  - min_req
+                notes: MinAPI
+                priority: P0
+                dependencies:
+                  - LimitedEnv
+                milestone: M3
+                github_issues:
+                  - "#121 (closed)"
+                req_id: ""
+                test_id: TELEM-XX-03
+                status: approved
+          - description: BMC/Redfish Telemetry
+            tests:
+              - summary: Verify BMC/Redfish telemetry is accessible via API for GPU metrics not available from the host OS
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#362 (open)"
+                req_id: ""
+                test_id: TELEM-XX-04
+                status: pending
+          - description: Storage Telemetry
+            tests:
+              - summary: Verify storage resource capacity metrics are available (used/free/total)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#363 (open)"
+                req_id: ""
+                test_id: TELEM-XX-05
+                status: pending
+              - summary: Verify storage performance metrics are available (bandwidth, IOPS, latency)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#364 (open)"
+                req_id: ""
+                test_id: TELEM-XX-06
+                status: pending
+          - description: NVLink Switch Telemetry
+            tests:
+              - summary: Verify NVLink metrics are available from the GPU perspective (per-link counters, bandwidth utilization)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#365 (open)"
+                req_id: ""
+                test_id: TELEM-XX-07
+                status: pending
+              - summary: Verify NVLink metrics are available from the switch perspective (port-level counters, error rates)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#366 (open)"
+                req_id: ""
+                test_id: TELEM-XX-08
+                status: pending
+  - name: "Security & Identity"
+    components:
+      - name: Network Security
+        capabilities:
+          - description: BMC Security
+            tests:
+              - summary: Verify BMC management is on a dedicated, restricted network (physically separate or VLAN/VRF-isolated)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#306 (open)"
+                req_id: SEC12
+                test_id: SEC12-01
+                status: pending
+              - summary: Verify BMC interfaces are not reachable from tenant networks
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#307 (open)"
+                req_id: SEC12
+                test_id: SEC12-02
+                status: pending
+              - summary: Verify IPMI is disabled; Redfish over TLS is used with AAA
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#260 (open)"
+                req_id: CNP10
+                test_id: CNP10-01
+                status: pending
+              - summary: Verify BMC is only accessible via a hardened bastion (jumphost) server; direct public/corporate network access is blocked
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#308 (open)"
+                req_id: SEC12
+                test_id: SEC12-03
+                status: pending
+          - description: Network Traffic Encryption
+            tests:
+              - summary: Verify mTLS (or equivalent) for all east-west and north-south traffic
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#309 (open)"
+                req_id: SEC13
+                test_id: SEC13-01
+                status: pending
+          - description: Edge Security
+            tests:
+              - summary: Verify no public internet access to API endpoints by default
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#311 (open)"
+                req_id: SEC14
+                test_id: SEC14-01
+                status: pending
+              - summary: Verify insecure protocols (HTTP, SSLv3, TLSv1) are disabled
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#310 (open)"
+                req_id: SEC13
+                test_id: SEC13-02
+                status: pending
+          - description: InfiniBand Security
+            tests:
+              - summary: Verify IB tenant isolation — compute dedicated to NVIDIA is isolated from other customers
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#287 (open)"
+                req_id: SDN04
+                test_id: SDN04-04
+                status: pending
+              - summary: "Verify IB keys are configured: P_Key, Management Key, Aggregation Management Key, VendorSpecific Key, CongestionControl Key, Node2Node Key, Manager2Node Key"
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#288 (open)"
+                req_id: SDN04
+                test_id: SDN04-05
+                status: pending
+          - description: Tenancy Isolation
+            tests:
+              - summary: Verify hard physical or logical isolation between tenants for network, data, compute, and storage resources
+                req_id: SEC11
+                test_id: SEC11-01
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#305 (open)"
+                status: pending
+      - name: Authentication
+        capabilities:
+          - description: User Authentication
+            tests:
+              - summary: Verify user authentication via OIDC for platform services
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#293 (open)"
+                req_id: SEC01
+                test_id: SEC01-01
+                status: pending
+          - description: In-Cluster Authentication
+            tests:
+              - summary: Verify workloads and nodes receive short-lived credentials/tokens
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#294 (open)"
+                req_id: SEC02
+                test_id: SEC02-01
+                status: pending
+          - description: External Service Authentication
+            tests:
+              - summary: Verify out-of-cluster service accounts can authenticate with long-lived credentials
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#295 (open)"
+                req_id: SEC03
+                test_id: SEC03-01
+                status: pending
+          - description: Admin Interface Security
+            tests:
+              - summary: Verify all administrative interfaces (UI, CLI, API) are protected by Multi-Factor Authentication
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: INFO
+                github_issues:
+                  - "#298 (open)"
+                req_id: SEC07
+                test_id: SEC07-01
+                status: pending
+      - name: Authorization
+        capabilities:
+          - description: RBAC
+            tests:
+              - summary: Assign a minimal role to a user; verify they cannot perform actions outside that role on Compute, Storage, and Network APIs
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#297 (open)"
+                req_id: SEC04
+                test_id: SEC04-02
+                status: pending
+      - name: "Audit & Logging"
+        capabilities:
+          - description: "Audit & Logging"
+            tests:
+              - summary: Perform a management API call; verify an audit log entry is generated with correct metadata
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#299 (open)"
+                req_id: SEC08
+                test_id: SEC08-01
+                status: pending
+              - summary: Verify audit logs are retained for at least 30 days
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#300 (open)"
+                req_id: SEC08
+                test_id: SEC08-02
+                status: pending
+      - name: "Hardware Security & Compliance"
+        capabilities:
+          - description: Data Sanitization
+            tests:
+              - summary: Verify memory sanitization between tenants
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#312 (open)"
+                req_id: SEC21
+                test_id: SEC21-04
+                status: pending
+              - summary: Verify SRAM/GPU memory is sanitized between tenants
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#313 (open)"
+                req_id: SEC21
+                test_id: SEC21-05
+                status: pending
+              - summary: Verify TPM and BIOS are reset during tenant transitions or hardware replacement
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#314 (open)"
+                req_id: SEC21, SEC22
+                test_id: SEC21-06
+                status: pending
+          - description: At-Rest Encryption
+            tests:
+              - summary: Verify all data at rest is encrypted via SED on local NVMe/SSD and network-attached storage
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: SEC20
+                test_id: SEC20-01
+                status: pending
+          - description: Key Management
+            tests:
+              - summary: Verify a centralized KMS is used for all encryption keys and secrets
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#303 (open)"
+                req_id: SEC09, SEC10
+                test_id: SEC09-03
+                status: pending
+              - summary: Verify support for Customer Managed Keys (BYOK)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#304 (open)"
+                req_id: SEC09
+                test_id: SEC09-04
+                status: pending
+  - name: Network Transport
+    components:
+      - name: Backend Switch Fabric API
+        capabilities:
+          - description: Backend Switch Fabric API
+            tests:
+              - summary: Query the API for a compute node and verify it returns backend switch IDs (leaf, spine, core)
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#278 (open)"
+                req_id: NET01
+                test_id: NET01-01
+                status: pending
+      - name: NVLink Domain API
+        capabilities:
+          - description: NVLink Domain API
+            tests:
+              - summary: Query the NVLink domain ID for a compute node supporting NVLink
+                labels:
+                  - min_req
+                priority: P0
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#279 (open)"
+                req_id: NET02
+                test_id: NET02-02
+                status: pending
+      - name: Transport Connectivity
+        capabilities:
+          - description: CorpIT Interconnect
+            tests:
+              - summary: Verify Private Cloud Interconnect to NVIDIA CorpIT is operational
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#280 (open)"
+                req_id: NET04
+                test_id: NET04-01
+                status: pending
+          - description: DGXC Storage Interconnect
+            tests:
+              - summary: Verify high-bandwidth Private Cloud Interconnect to DGXC on-prem object storage
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: NET05
+                test_id: NET05-01
+                status: pending
+              - summary: Verify end-to-end MACsec encryption (fail-closed)
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: NET05
+                test_id: NET05-02
+                status: pending
+          - description: Cluster Internet Access
+            tests:
+              - summary: Verify egress NAT IPs are a static pool dedicated to NVIDIA
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: NET06
+                test_id: NET06-01
+                status: pending
+              - summary: Verify redundant upstream paths for internet connectivity
+                labels:
+                  - min_req
+                priority: INFO
+                milestone: M5
+                notes: ""
+                github_issues: []
+                req_id: NET06
+                test_id: NET06-02
+                status: pending
+  - name: "Capacity & Fleet Management"
+    components:
+      - name: Governance Metrics
+        capabilities:
+          - description: Governance Metrics
+            tests:
+              - summary: Query and verify governance API returns Delivered, Healthy, Reserved, and Active metrics for nodes/GPUs
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#251 (open)"
+                req_id: CAP01
+                test_id: CAP01-01
+                status: pending
+      - name: Capacity Reservations
+        capabilities:
+          - description: Capacity Reservations
+            tests:
+              - summary: Verify a set of resources can be logically grouped and pinned to an account
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#252 (open)"
+                req_id: CAP04
+                test_id: CAP04-01
+                status: pending
+              - summary: Verify atomic allocation of a topology block as a single unit
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#253 (open)"
+                req_id: CAP04
+                test_id: CAP04-02
+                status: pending
+      - name: Unified Health APIs
+        capabilities:
+          - description: Unified Health APIs
+            tests:
+              - summary: Verify per-host health API returns real-time GPU state, thermal status, memory health
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#254 (open)"
+                req_id: CAP05
+                test_id: CAP05-01
+                status: pending
+              - summary: Verify primitive-level health aggregation (cluster, nodegroup, or reservation level)
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#255 (open)"
+                req_id: CAP05
+                test_id: CAP05-02
+                status: pending
+  - name: Benchmarking
+    components:
+      - name: Exemplar
+        capabilities:
+          - description: Run a mini-cloud configuration of Exemplar benchmarks
+            tests:
+              - summary: Simulate Exemplar across 512 GPU cluster using latest dgxc-benchmarking release
+                labels:
+                  - min_req
+                req_id: BM01
+                test_id: BM01-01
+                status: pending
+                notes: ""
+              - summary: "NVMesh checks?"
+                notes: REVIEW
+                req_id: ""
+                test_id: BENCH-XX-01
+                status: pending
+                priority: ""
+              - summary: "IPv4 and IPv6 checks?"
+                notes: REVIEW
+                req_id: ""
+                test_id: BENCH-XX-02
+                status: pending
+                priority: ""
+              - summary: "Verify performance is within 5% of NVIDIA Reference"
+                labels:
+                  - min_req
+                priority: P1
+                milestone: M5
+                notes: ""
+                github_issues:
+                  - "#249 (open)"
+                req_id: BM01
+                test_id: BM01-02
+                status: pending

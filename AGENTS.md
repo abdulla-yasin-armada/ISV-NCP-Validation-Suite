@@ -22,6 +22,7 @@ make test              # run tests
 make demo-test         # run all my-isv configs end-to-end (ISVCTL_DEMO_MODE=1, ~10s, no cloud)
 make lint              # ruff
 make format            # ruff format
+make plan              # render docs/test-plan.yaml to AsciiDoc + interactive HTML
 uv run isvctl test run -f isvctl/configs/suites/k8s.yaml          # canonical invocation
 uv run isvctl test run -f config.yaml -- -v -s -k "test_name"     # forward pytest args
 ```

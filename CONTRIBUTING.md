@@ -89,6 +89,7 @@ make format        # Format code on all packages
 make pre-commit    # Run pre-commit on all packages
 make build         # Build all packages
 make clean         # Clean build artifacts
+make plan          # Render docs/test-plan.yaml to AsciiDoc and interactive HTML
 ```
 
 ### Per-Package Development

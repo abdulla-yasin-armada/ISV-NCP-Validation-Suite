@@ -96,6 +96,7 @@ make help      # Show available targets
 make test      # Run tests for all packages
 make lint      # Run linting
 make build     # Build all packages
+make plan      # Render docs/test-plan.yaml to AsciiDoc and interactive HTML
 ```
 
 See [Contributing](CONTRIBUTING.md) for development setup and guidelines.

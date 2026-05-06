@@ -2,7 +2,7 @@ MY_ISV_DOMAINS := bare_metal control-plane iam image-registry network security v
 DEMO_TARGETS := $(addprefix demo-,$(MY_ISV_DOMAINS))
 
 .PHONY: help pre-commit build test coverage clean lint format install bump-patch bump-fix bump-minor bump-feat bump-major bump bump-check \
-	security-trivy security-trivy-detail security-trufflehog ci-security demo-test demo-all $(DEMO_TARGETS)
+	security-trivy security-trivy-detail security-trufflehog ci-security demo-test demo-all $(DEMO_TARGETS) plan
 
 PACKAGES := isvctl isvreporter isvtest
 BUMP_SCRIPT := scripts/bump-version.py
@@ -179,3 +179,8 @@ update-spdx-headers: ## Update SPDX headers in all packages
 	@echo "Updating SPDX headers in all packages..."
 	@uv run python scripts/add_spdx_headers.py
 	@echo "✅ SPDX headers updated!"
+
+plan: ## Render docs/test-plan.yaml to AsciiDoc
+	@echo "Rendering test plan..."
+	@uv run python scripts/test_plan_yaml_to_adoc.py
+	@echo "✅ Test plan rendered!"

@@ -1,0 +1,4850 @@
+= NCP Validation Test Suite
+:toc:
+:icons: font
+:max-width: none
+
+[cols="2,2,5,2,2,1,1,1,1,1,3,1,1,1,6,1,4",options="header"]
+|===
+| Test Domain | Function | Description | Example | Test ID | Req ID | GH | Labels | Notes | Priority | Issues | Dependencies | Milestone | Release | Test Cases | Status | Justification
+
+.20+| Foundational Services
+.10+| Image Registry
+.10+| Stores and distributes boot images, VM images, containers, and deployment artifacts. Acts as a trusted source for all deployable assets.
+.10+| GCP Artifact Registry + Images
+| [[BOOT01-01]]BOOT01-01
+| BOOT01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/37[#37]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/37[#37] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/38[#38]
+| LimitedEnv
+| M0
+|
+| CRUD an custom OS image (iso file) (Upload an ISO file if supported, or remote URL if supported).
+| approved
+|
+
+| [[BOOT01-02]]BOOT01-02
+| BOOT01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/39[#39]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/39[#39]
+| LimitedEnv
+| M1
+|
+| CRUD an OS install configuration (e.g. iPXE config like Carbide)
+| approved
+|
+
+| [[BOOT03-01]]BOOT03-01
+| BOOT03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/40[#40]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/40[#40]
+| LimitedEnv
+| M0
+|
+| CRUD a custom VM image
+| approved
+|
+
+| [[BOOT03-02]]BOOT03-02
+| BOOT03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/104[#104]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/104[#104]
+|
+| M3
+|
+| CRUD (get, list, create, delete) custom OS images for fast boot (raw, qcow2, img, etc) for BM/VM
+| approved
+|
+
+| [[BOOT01-03]]BOOT01-03
+| BOOT01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/41[#41]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/41[#41]
+| LimitedEnv
+| M1
+|
+| Check that an OS image can be installed on a BMaaS system
+| approved
+|
+
+| [[BOOT01-04]]BOOT01-04
+| BOOT01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/43[#43]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/43[#43]
+| LimitedEnv
+| M1
+|
+| Check that an OS install configuration can be installed on a BMaaS system
+| approved
+|
+
+| [[BOOT01-05]]BOOT01-05
+| BOOT01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/44[#44]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/44[#44]
+| LimitedEnv
+| M0
+|
+| Check that a VM image can be installed onto a VMaaS system
+| approved
+|
+
+| [[IMG-XX-01]]IMG-XX-01
+|
+|
+|
+|
+| P1
+a|
+|
+| M4
+|
+| Verify that an OS image (iso file) with full NVIDIA support is readily available
+| approved
+|
+
+| [[IMG-XX-02]]IMG-XX-02
+|
+|
+|
+|
+| P1
+a|
+|
+| M4
+|
+| Verify that an OS install configuration (e.g. iPXE config like Carbide) with full NVIDIA support is readily available
+| approved
+|
+
+| [[IMG-XX-03]]IMG-XX-03
+|
+|
+|
+|
+| P1
+a|
+|
+| M4
+|
+| Verify that an VM image with full NVIDIA support is readily available
+| approved
+|
+
+.3+| Key Secret Mgmt
+.3+| Securely stores and manages cryptographic keys, secrets, and certificates. Supports key rotation
+.3+| AWS Secrets Manager / KMS
+| [[AUTH-XX-01]]AUTH-XX-01
+|
+|
+|
+|
+| P1
+a|
+| LimitedEnv
+| M4
+|
+| CRUD an SSH/Teleport compatible public key for system login
+| approved
+|
+
+| [[AUTH-XX-02]]AUTH-XX-02
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/247[#247]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/247[#247]
+|
+| M5
+|
+| Spin up an instance which uses a specified key
+| approved
+|
+
+| [[AUTH-XX-03]]AUTH-XX-03
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/248[#248]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/248[#248]
+|
+| M5
+|
+| Access other components via a specified key as possible (SOL, Network devices)
+| approved
+|
+
+.3+| Identity and Asset Mgmt (IAM)
+.3+| Manages users, service identities, roles, and permissions across tenants and services. Forms the security foundation of the platform.
+.3+| AWS: IAM
+| [[IAM-XX-01]]IAM-XX-01
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/21[#21]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/21[#21]
+| LimitedEnv
+| M0
+|
+| Create user and log in as that user
+| approved
+|
+
+| [[IAM-XX-02]]IAM-XX-02
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/23[#23]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/23[#23]
+| LimitedEnv
+| M0
+|
+| Delete user
+| approved
+|
+
+| [[IAM-XX-03]]IAM-XX-03
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/341[#341]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/341[#341]
+| LimitedEnv
+| M5
+|
+| Validate that a user created can access the API and authorized resources
+| approved
+|
+
+.2+| DDI
+.2+| core network services for name resolution, IP allocation, and address lifecycle management
+.2+| GCP Cloud DNS + IPAM
+| [[CP-XX-01]]CP-XX-01
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/131[#131]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/131[#131]
+| MiniCloud
+| M4
+|
+| Check that IP addresses are managed by the platform, and that DHCP is able to provide IP addresses
+| approved
+|
+
+| [[CP-XX-02]]CP-XX-02
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/132[#132]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/132[#132]
+| MiniCloud
+| M4
+|
+| Check that IP addresses are managed sensibly as VPCs are configured (Move to SDN section?)
+| approved
+|
+
+| Network Underlay & Mgmt
+| Brings up the physical network fabric for Day 0, base configuration, and network OS installation. Manages switch OS versions, compliance, and safe upgrades over time. Provides base network that overlays and tenants are built upon.
+| Netris
+| [[NETMGMT-XX-01]]NETMGMT-XX-01
+|
+|
+|
+|
+| P0
+a|
+| MiniCloud
+| M4
+|
+| Verify that all switches in the are reachable and healthy (SSH, API, etc)
+| pending
+|
+
+| Resource Database
+| Resource Inventory for useable resources withing the data center
+|
+| [[RESDB-XX-01]]RESDB-XX-01
+|
+|
+|
+|
+| P1
+a|
+| LimitedEnv
+| M4
+|
+| Verify that all resources assigned to the cluster are accounted for
+| pending
+|
+
+.142+| Infrastructure and Data Services
+.9+| Control Plane accessible
+.9+| Control plane can be accessed
+.9+|
+| [[CP-XX-03]]CP-XX-03
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/26[#26]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/26[#26] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/27[#27]
+| LimitedEnv
+| M0
+|
+| Make sure we can ping the control plane, or get a heart beat/status code
+| approved
+|
+
+| [[CP-XX-04]]CP-XX-04
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/261[#261]
+|
+|
+| P2
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/261[#261]
+| LimitedEnv
+| M5
+|
+| Control Plane can be upgraded (measure impact)
+| approved
+|
+
+| [[CP-XX-05]]CP-XX-05
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/28[#28]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/28[#28]
+| LimitedEnv
+| M0
+|
+| Access keys can be created, received, used to log in
+| approved
+|
+
+| [[CP-XX-06]]CP-XX-06
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/29[#29]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/29[#29]
+| LimitedEnv
+| M0
+|
+| Access keys can expire or be disabled
+| approved
+|
+
+| [[CP-XX-07]]CP-XX-07
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/30[#30]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/30[#30]
+| LimitedEnv
+| M0
+|
+| Create tenants
+| approved
+|
+
+| [[CP-XX-08]]CP-XX-08
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/31[#31]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/31[#31]
+| LimitedEnv
+| M0
+|
+| Retrieve list of tenants
+| approved
+|
+
+| [[CP-XX-09]]CP-XX-09
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/32[#32]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/32[#32] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/33[#33]
+| LimitedEnv
+| M0
+|
+| Retrieve info about individual tenant
+| approved
+|
+
+| [[CP-XX-10]]CP-XX-10
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/34[#34]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/34[#34]
+| LimitedEnv
+| M0
+|
+| Delete Tenant
+| approved
+|
+
+| [[CP-XX-11]]CP-XX-11
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/35[#35]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/35[#35]
+| LimitedEnv
+| M0
+|
+| Add user to tenant
+| approved
+|
+
+.2+| Hardware ingestion
+.2+| Makes sure that all hardware under test has been ingested
+.2+|
+| [[HWING-XX-01]]HWING-XX-01
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/133[#133]
+|
+|
+| P1 (check w/ ISVs)
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/133[#133]
+| MiniCloud
+| M4
+|
+| Makes sure that all hardware under test has been ingested, and matches the provided hardware
+| approved
+|
+
+| [[HWING-XX-02]]HWING-XX-02
+|
+|
+|
+|
+| P1
+a|
+| MiniCloud
+| M4
+|
+| Make sure that a device can be removed from the system
+| approved
+|
+
+.7+| Attestation
+.7+|
+.7+|
+| [[SEC22-01]]SEC22-01
+| SEC22
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/315[#315]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/315[#315]
+| MiniCloud
+| M5
+|
+| Check that hardware passes nonce check
+| approved
+|
+
+| [[ATTEST-XX-01]]ATTEST-XX-01
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/243[#243]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/243[#243]
+| MiniCloud
+| M5
+|
+| Check that OS is approved
+| approved
+|
+
+| [[SEC22-02]]SEC22-02
+| SEC22
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/316[#316]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/316[#316]
+| MiniCloud
+| M5
+|
+| Check that TPM Configuration can be set per host
+| approved
+|
+
+| [[ATTEST-XX-02]]ATTEST-XX-02
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/319[#319]
+|
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/319[#319] +
+icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/246[#246]
+| MiniCloud
+| M5
+|
+| Check that an updated BIOS is installed on all hardware
+| approved
+|
+
+| [[CNP09-01]]CNP09-01
+| CNP09
+|
+| min_req
+|
+| P1
+a|
+| MiniCloud
+| M4
+|
+| Check that the updated firmware is installed
+| approved
+|
+
+| [[CNP09-02]]CNP09-02
+| CNP09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/259[#259]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/259[#259]
+|
+| M5
+|
+| Verify all firmware is cryptographically signed and attested during boot
+| pending
+|
+
+| [[SEC22-03]]SEC22-03
+| SEC22
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| TPM Secure Boot in BIOS
+| pending
+|
+
+.28+| Compute Services: BMaaS
+.8+| Supports the basic lifecycle of Bare Metal nodes
+.8+| AWS EC2/Forge
+| [[CNP01-01]]CNP01-01
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/49[#49]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/49[#49]
+| LimitedEnv
+| M1
+|
+| Create a Bare Metal node
+| approved
+|
+
+| [[CNP01-02]]CNP01-02
+| CNP01, CNP04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/51[#51]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/51[#51] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/52[#52]
+|
+| M5
+|
+| Supports the basic lifecycle of Bare Metal nodes, following the standard CRUD pattern
+| approved
+|
+
+| [[CNP01-03]]CNP01-03
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/53[#53]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/53[#53]
+| LimitedEnv
+| M1
+|
+| Delete a Bare Metal node
+| approved
+|
+
+| [[SEC21-01]]SEC21-01
+| SEC21
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/54[#54]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/54[#54] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/47[#47]
+| LimitedEnv
+| M1
+|
+| Confirm sanitization on delete - Tenant View
+| approved
+|
+
+| [[SEC21-02]]SEC21-02
+| SEC21
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/134[#134]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/134[#134]
+| MiniCloud
+| M4
+|
+| Confirm sanitization on delete - Low Level
+| approved
+|
+
+| [[CNP01-04]]CNP01-04
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/105[#105]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/105[#105]
+| MiniCloud
+| M3
+|
+| Topology-based placement
+| approved
+|
+
+| [[BMAAS-XX-01]]BMAAS-XX-01
+|
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| Node attached storage
+| pending
+|
+
+| [[BMAAS-XX-02]]BMAAS-XX-02
+|
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| Storage: Config/default/access to local NVME drives
+| pending
+|
+
+.8+| Once created, nodes can be accessed for usage, and have the high level support controls of reboot, reinstall.
+.8+| AWS EC2/Forge
+| [[BMAAS-XX-03]]BMAAS-XX-03
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/48[#48]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/48[#48] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/56[#56]
+| LimitedEnv
+| M1
+|
+| A running node can be accessed via SSH/Teleport for further configuration (Bare Metal)
+| approved
+|
+
+| [[CNP01-05]]CNP01-05
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/50[#50]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/50[#50] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/57[#57]
+|
+| M1
+|
+| A running node can be rebooted in case of issue (Bare Metal)
+| approved
+|
+
+| [[CNP01-06]]CNP01-06
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/135[#135]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/135[#135]
+| MiniCloud
+| M4
+|
+| A running node can be power-cycled in case of issue
+| approved
+|
+
+| [[BMAAS-XX-04]]BMAAS-XX-04
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/58[#58]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/58[#58] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/69[#69]
+| LimitedEnv
+| M1
+|
+| DEPRECATED: A node can be reinstalled from its configured stock operating system
+| approved
+|
+
+| [[CNP01-07]]CNP01-07
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/106[#106]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/106[#106]
+| MiniCloud
+| M3
+|
+| A running node can be powered off (Without being destroyed)
+| approved
+|
+
+| [[BOOT02-01]]BOOT02-01
+| BOOT02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/107[#107]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/107[#107] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/113[#113]
+|
+| M3
+|
+| Support for cloud-init and instance metadata discovery via link-local addresses (e.g. 169.254.169.254) or virtual devices (Bare Metal)
+| approved
+|
+
+| [[CNP01-08]]CNP01-08
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/108[#108]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/108[#108]
+| MiniCloud
+| M3
+|
+| A powered off node can be powered back on
+| approved
+|
+
+| [[CNP05-01]]CNP05-01
+| CNP05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/112[#112]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/112[#112] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/181[#181]
+| LimitedEnv
+| M3 .5
+|
+| Support for user-defined tags/labels and cloud-init metadata on instances. (Bare Metal)
+| approved
+|
+
+.2+| Nodes will be able to access expected resources on the local networks
+.2+| AWS EC2/Forge
+| [[BMAAS-XX-05]]BMAAS-XX-05
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/136[#136]
+|
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/136[#136]
+| MiniCloud
+| M4
+|
+| Check the health and status of the DPU on instantiation
+| approved
+|
+
+| [[BMAAS-XX-06]]BMAAS-XX-06
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/60[#60]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/60[#60]
+| LimitedEnv
+| M1
+|
+| Nodes can communicate across ethernet, infiniband, and NVLink (Bare Metal)
+| approved
+|
+
+.8+| Observability & Debug
+.8+| AWS EC2/Forge
+| [[BMAAS-XX-07]]BMAAS-XX-07
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/250[#250]
+|
+| REVIEW
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/250[#250]
+|
+| M5
+|
+| Check for any per-host status log over time.
+| approved
+|
+
+| [[CNP06-01]]CNP06-01
+| CNP06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/109[#109]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/109[#109] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/114[#114]
+| LimitedEnv
+| M3
+|
+| Serial console access is required (read-only sufficient, interactive preferred) (Bare Metal)
+| approved
+|
+
+| [[BMAAS-XX-08]]BMAAS-XX-08
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/61[#61]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/61[#61]
+| LimitedEnv
+| M1
+|
+| Verify NVIDIA hardware
+| approved
+|
+
+| [[BMAAS-XX-09]]BMAAS-XX-09
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/63[#63]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/63[#63] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/68[#68]
+| LimitedEnv
+| M1
+|
+| GPU Stress workload (Bare Metal)
+| approved
+|
+
+| [[BMAAS-XX-10]]BMAAS-XX-10
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/64[#64]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/64[#64] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/82[#82]
+| LimitedEnv
+| M1
+|
+| Nim Inference jobs (Bare Metal)
+| approved
+|
+
+| [[BMAAS-XX-11]]BMAAS-XX-11
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/65[#65]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/65[#65]
+| LimitedEnv
+| M1
+|
+| NCCL tests
+| approved
+|
+
+| [[BMAAS-XX-12]]BMAAS-XX-12
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/66[#66]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/66[#66]
+| LimitedEnv
+| M1
+|
+| Training workload test
+| approved
+|
+
+| [[CNP06-02]]CNP06-02
+| CNP06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/258[#258]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/258[#258]
+|
+| M5
+|
+| Verify that serial console output is logged and queryable for at least 1 month of history
+| pending
+|
+
+.2+| Stable Identifiers
+.2+|
+| [[CNP08-01]]CNP08-01
+| CNP08
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/197[#197]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/197[#197] +
+icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/196[#196] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/185[#185]
+|
+| M5
+|
+| Verify that a BM node's ID does not change after a reboot
+| pending
+|
+
+| [[CNP08-02]]CNP08-02
+| CNP08
+|
+| min_req
+|
+| P0
+a|
+|
+| M5
+|
+| Verify that a BM node's ID does not change after a maintenance/reprovision event
+| pending
+|
+
+.29+| Compute Service: VMaaS
+.5+| Supports the basic lifecycle of VM nodes
+.5+|
+| [[CNP01-09]]CNP01-09
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/42[#42]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/42[#42]
+| LimitedEnv
+| M0
+|
+| Create a VM node
+| approved
+|
+
+| [[CNP01-10]]CNP01-10
+| CNP01, CNP04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/51[#51]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/51[#51]
+| LimitedEnv
+| M2
+|
+| Get info about a specific VM node, including if it is ready for use
+| approved
+|
+
+| [[CNP01-11]]CNP01-11
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/45[#45]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/45[#45]
+| LimitedEnv
+| M1
+|
+| Get a list of all VM nodes in a VPC
+| approved
+|
+
+| [[CNP01-12]]CNP01-12
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/46[#46]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/46[#46]
+| LimitedEnv
+| M0
+|
+| Delete a VM node
+| approved
+|
+
+| [[SEC21-03]]SEC21-03
+| SEC21
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/47[#47]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/47[#47]
+| LimitedEnv
+| M0
+|
+| Confirm sanitization on delete
+| approved
+|
+
+.7+| Once created, VM nodes can be accessed for usage, and have the high level support controls of reboot, reinstall
+.7+|
+| [[VMAAS-XX-01]]VMAAS-XX-01
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| A running node can be accessed via SSH/Teleport for further configuration (VM)
+| approved
+|
+
+| [[CNP01-13]]CNP01-13
+| CNP01
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| A running node can be rebooted in case of issue (VM)
+| approved
+|
+
+| [[VMAAS-XX-02]]VMAAS-XX-02
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M1
+|
+| DEPRECATED: A node can be reinstalled from its configured stock operating system
+| pending
+|
+
+| [[CNP01-14]]CNP01-14
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/110[#110]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/110[#110]
+| LimitedEnv
+| M3
+|
+| A running VM can be stopped (Without being destroyed)
+| approved
+|
+
+| [[CNP01-15]]CNP01-15
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/111[#111]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/111[#111]
+| LimitedEnv
+| M3
+|
+| A powered off VM can be started
+| approved
+|
+
+| [[CNP05-02]]CNP05-02
+| CNP05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/112[#112]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/112[#112]
+| LimitedEnv
+| M3
+|
+| Support for user-defined tags/labels and cloud-init metadata on instances. (VM)
+| approved
+|
+
+| [[BOOT02-02]]BOOT02-02
+| BOOT02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/113[#113]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/113[#113]
+|
+| M3
+|
+| Support for cloud-init and instance metadata discovery via link-local addresses (e.g. 169.254.169.254) or virtual devices (VM)
+| approved
+|
+
+.2+| Quota should be enforced
+.2+|
+| [[VMAAS-XX-03]]VMAAS-XX-03
+|
+|
+|
+|
+| P2
+a|
+|
+|
+|
+| Noisy Neighbor CPU/GPU tests
+| approved
+|
+
+| [[VMAAS-XX-04]]VMAAS-XX-04
+|
+|
+|
+|
+| P2
+a|
+|
+|
+|
+| Tenant cannot allocate more VMs than their quota allows
+| approved
+|
+
+.6+| The underlying system allows VMs to access the GPU, with high performance, and are running with the correct parameters for optimal performance
+.6+|
+| [[VMAAS-XX-05]]VMAAS-XX-05
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/55[#55]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/55[#55]
+| LimitedEnv
+| M0
+|
+| Check that the host OS is a known acceptable image (like Ubuntu/DGXOS)
+| approved
+|
+
+| [[VMAAS-XX-06]]VMAAS-XX-06
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/59[#59]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/59[#59]
+| LimitedEnv
+| M0
+|
+| Check that the GPU is visible and accessible from the VM
+| approved
+|
+
+| [[VMAAS-XX-07]]VMAAS-XX-07
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/62[#62]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/62[#62]
+| LimitedEnv
+| M0
+|
+| Check that the correct Linux Kernel, libvirt, sbios, and NVIDIA drivers are installed
+| approved
+|
+
+| [[VMAAS-XX-08]]VMAAS-XX-08
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M1
+|
+| Check that vEGM is configured correctly
+| approved
+|
+
+| [[VMAAS-XX-09]]VMAAS-XX-09
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/67[#67]
+|
+| Does this include GPU Passthrough
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/67[#67]
+| LimitedEnv
+| M0
+|
+| Check that vCPU pinning is set correctly, PCI bus is configured correctly
+| approved
+|
+
+| [[VMAAS-XX-10]]VMAAS-XX-10
+|
+|
+|
+|
+| P1
+a|
+| LimitedEnv
+| M5
+|
+| TODO: More things from the "NVIDIA Grace I/O Virtualization Guide"
+| approved
+|
+
+.3+| Can run AI/ML Jobs
+.3+|
+| [[VMAAS-XX-11]]VMAAS-XX-11
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| GPU Stress workload (VM)
+| approved
+|
+
+| [[VMAAS-XX-12]]VMAAS-XX-12
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M1
+|
+| Nim Inference jobs (VM)
+| approved
+|
+
+| [[VMAAS-XX-13]]VMAAS-XX-13
+|
+|
+|
+|
+| P0
+a|
+|
+| M5
+|
+| Run NCCL tests
+| approved
+|
+
+| nodes will be able to access expected resources on the local networks
+| AWS EC2/Forge
+| [[VMAAS-XX-14]]VMAAS-XX-14
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M5
+|
+| Nodes can communicate across ethernet, infiniband, and NVLink (VM)
+| approved
+|
+
+| Observability & Debug
+|
+| [[CNP06-03]]CNP06-03
+| CNP06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/114[#114]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/114[#114]
+|
+| M3
+|
+| Serial console access is required (read-only sufficient, interactive preferred) (VM)
+| approved
+|
+
+.2+| Stable Identifiers
+.2+|
+| [[CNP08-03]]CNP08-03
+| CNP08
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/198[#198]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/198[#198]
+|
+| M5
+|
+| Verify that a VM's ID does not change after a stop/start cycle
+| pending
+|
+
+| [[CNP08-04]]CNP08-04
+| CNP08
+|
+| min_req
+|
+| P0
+a|
+|
+| M5
+|
+| Verify that a VM's ID does not change after a live migration or maintenance event
+| pending
+|
+
+.2+| VM Hardening
+.2+|
+| [[CNP01-16]]CNP01-16
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/256[#256]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/256[#256]
+|
+| M5
+|
+| Verify console access is restricted via RBAC
+| pending
+|
+
+| [[CNP01-17]]CNP01-17
+| CNP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/257[#257]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/257[#257]
+|
+| M5
+|
+| Verify USB, clipboard, and unnecessary virtual devices are disabled
+| pending
+|
+
+.44+| SDN Controller
+.34+| Controls software-defined networking overlays and fabric behavior to match the compute-on-demand requirements. Enables network segmentation, isolation, dynamic network configuration, and security groups.
+.34+|
+| [[SDN01-01]]SDN01-01
+| SDN01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/11[#11]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/11[#11]
+| LimitedEnv
+| M0
+|
+| Create a VPC
+| approved
+|
+
+| [[SDN01-02]]SDN01-02
+| SDN01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/12[#12]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/12[#12]
+| LimitedEnv
+| M0
+|
+| Retrieve a VPC
+| approved
+|
+
+| [[SDN01-03]]SDN01-03
+| SDN01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/13[#13]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/13[#13]
+| LimitedEnv
+| M0
+|
+| Update a VPC
+| approved
+|
+
+| [[SDN01-04]]SDN01-04
+| SDN01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/14[#14]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/14[#14]
+| LimitedEnv
+| M0
+|
+| Delete a VPC
+| approved
+|
+
+| [[SDN04-01]]SDN04-01
+| SDN04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/16[#16]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/16[#16]
+| LimitedEnv
+| M0
+|
+| Verify that a VPC has an exclusive subnet
+| approved
+|
+
+| [[SDN04-02]]SDN04-02
+| SDN04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/17[#17]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/17[#17] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/18[#18]
+| LimitedEnv
+| M0
+|
+| Verify that nodes in two VPCs cannot communicate over the N/S (TAN) network
+| approved
+|
+
+| [[SDN04-03]]SDN04-03
+| SDN04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/18[#18]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/18[#18]
+| LimitedEnv
+| M0
+|
+| Verify that nodes in two VPCs cannot communicate over the E/W (CIN) network
+| approved
+|
+
+| [[NET03-01]]NET03-01
+| NET03, SDN01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/115[#115]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/115[#115]
+|
+| M3
+|
+| Support non-conflicting Bring-Your-Own-IP (including 7.0.0.0/8)
+| approved
+|
+
+| [[SDN-XX-01]]SDN-XX-01
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/116[#116]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/116[#116]
+|
+| M3
+|
+| Support Stable Private IP allocations, where if a VM crashes and restarts the same IP address remains pinned until the node is deleted
+| approved
+|
+
+| [[SDN05-01]]SDN05-01
+| SDN05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/117[#117]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/117[#117]
+|
+| M3
+|
+| Atomically switch a floating private IP between nodes via API within <10 seconds without requiring an instance reboot.
+| approved
+|
+
+| [[SDN06-01]]SDN06-01
+| SDN06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/118[#118]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/118[#118]
+|
+| M3
+|
+| Localized DNS: Support for custom, localized DNS settings to enable internal domain resolution to private endpoints (e.g. storage endpoints)
+| approved
+|
+
+| [[SDN07-01]]SDN07-01
+| SDN07
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/119[#119]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/119[#119]
+|
+| M3
+|
+| Support for VPC peering with full bandwidth and no "hairpin" routing.
+| approved
+|
+
+| [[SDN02-01]]SDN02-01
+| SDN02, SDN03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/199[#199]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/199[#199] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/171[#171] +
+icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/178[#178]
+|
+|
+|
+| Create a Security Group
+| approved
+|
+
+| [[SDN02-02]]SDN02-02
+| SDN02, SDN03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/200[#200]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/200[#200]
+|
+|
+|
+| Retrieve a Security Group/list Security Groups
+| approved
+|
+
+| [[SDN02-03]]SDN02-03
+| SDN02, SDN03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/201[#201]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/201[#201]
+|
+|
+|
+| Update a Security Group
+| approved
+|
+
+| [[SDN02-04]]SDN02-04
+| SDN02, SDN03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/202[#202]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/202[#202]
+|
+|
+|
+| Delete a Security Group
+| approved
+|
+
+| [[CNP03-01]]CNP03-01
+| CNP03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/19[#19]
+|
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/19[#19]
+| LimitedEnv
+| M0
+|
+| NVLink Partitioning
+| approved
+|
+
+| [[SDN-XX-02]]SDN-XX-02
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| NVLink: Create a new partition; verify success response with partition key.
+| approved
+|
+
+| [[SDN-XX-03]]SDN-XX-03
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| NVLink: List partitions; retrieve a specific partition by partition ID
+| approved
+|
+
+| [[SDN-XX-04]]SDN-XX-04
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| NVLink: Delete an empty partition (no instances); retrieve by ID and verify not found.
+| approved
+|
+
+| [[SDN-XX-05]]SDN-XX-05
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| NVLink: Create a partition, create instance in that partition, make sure the instance becomes ready, delete instance, verify GPUs removed from partition.
+| approved
+|
+
+| [[SDN-XX-06]]SDN-XX-06
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| NVLink: Create partition, create 2 instances, verify both share the same nvlink_partition_id and both GPUs are reported for that partition
+| approved
+|
+
+| [[SDN-XX-07]]SDN-XX-07
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: Assert nvidia-imex and nvidia-imex-ctl packages are installed and nvidia-imex.service unit is registered with systemd.
+| approved
+|
+
+| [[SDN-XX-08]]SDN-XX-08
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: Start nvidia-imex via systemctl start nvidia-imex and assert the service reaches active/ready state.
+| approved
+|
+
+| [[SDN-XX-09]]SDN-XX-09
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: Stop nvidia-imex via systemctl stop nvidia-imex and assert clean shutdown (other nodes show disabled node status).
+| approved
+|
+
+| [[SDN-XX-10]]SDN-XX-10
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: Enable IMEX at boot with systemctl enable nvidia-imex, reboot, and confirm IMEX starts automatically.
+| approved
+|
+
+| [[SDN-XX-11]]SDN-XX-11
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: After all nodes start IMEX, query domain state via nvidia-imex-ctl -N and assert state is UP, fully connected matrix
+| approved
+|
+
+| [[SDN-XX-12]]SDN-XX-12
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: With IMEX_ENABLE_AUTH_ENCRYPTION=0, form a multi-node domain and assert connectivity without any auth/encryption.
+| approved
+|
+
+| [[SDN-XX-13]]SDN-XX-13
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: Enable IMEX_ENABLE_AUTH_ENCRYPTION=1 with SSL_TLS mode, provide valid server/client certs, and assert mutual authentication and encrypted communication.
+| approved
+|
+
+| [[SDN-XX-14]]SDN-XX-14
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: Enable GSSAPI/Kerberos mode (GSS_AUTH_ENCRYPT), configure KDC/keytabs, and assert mutual auth + encryption between nodes.
+| approved
+|
+
+| [[SDN-XX-15]]SDN-XX-15
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: IMEX/K8s: Submit a workload requesting a ComputeDomain; assert ComputeDomain pods are created on each allocated node.
+| approved
+|
+
+| [[SDN-XX-16]]SDN-XX-16
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: From workload pods in a ComputeDomain run nvbandwidth-test-job
+| approved
+|
+
+| [[SDN-XX-17]]SDN-XX-17
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+| M4
+|
+| IMEX: After workload completes, assert ComputeDomain and associated IMEX resources are cleaned up.
+| approved
+|
+
+| [[SDN-XX-18]]SDN-XX-18
+|
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| Redundant Gateways
+| pending
+|
+
+.5+| Security Group Scope & Timing
+.5+|
+| [[SDN02-05]]SDN02-05
+| SDN02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/281[#281]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/281[#281]
+|
+| M5
+|
+| Verify security group rules can be scoped at workload level
+| pending
+|
+
+| [[SDN02-06]]SDN02-06
+| SDN02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/282[#282]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/282[#282]
+|
+| M5
+|
+| Verify security group rules can be scoped at node level
+| pending
+|
+
+| [[SDN02-07]]SDN02-07
+| SDN02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/283[#283]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/283[#283]
+|
+| M5
+|
+| Verify security group rules can be scoped at subnet/tenant level
+| pending
+|
+
+| [[SDN02-08]]SDN02-08
+| SDN02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/284[#284]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/284[#284]
+|
+| M5
+|
+| Measure and verify policy propagation timing is within acceptable bounds
+| pending
+|
+
+| [[SDN02-09]]SDN02-09
+| SDN02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/285[#285]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/285[#285]
+|
+| M5
+|
+| Verify security group rules can be scoped at K8s API service level
+| pending
+|
+
+| All-to-All Storage Routing
+|
+| [[SDN08-01]]SDN08-01
+| SDN08
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/289[#289]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/289[#289]
+|
+| M5
+|
+| Verify that storage hosts can route to each other with all-to-all L3 communication
+| pending
+|
+
+| Port Security
+|
+| [[SDN02-10]]SDN02-10
+| SDN02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/286[#286]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/286[#286]
+|
+| M5
+|
+| Verify customizable port security policies can be applied to virtual interfaces
+| pending
+|
+
+.3+| Network Infrastructure Observability
+.3+|
+| [[SDN09-01]]SDN09-01
+| SDN09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/290[#290]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/290[#290]
+|
+| M5
+|
+| Verify logging is available for network hardware faults
+| pending
+|
+
+| [[SDN09-02]]SDN09-02
+| SDN09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/291[#291]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/291[#291]
+|
+| M5
+|
+| Verify logging captures latency/performance fluctuations
+| pending
+|
+
+| [[SDN09-03]]SDN09-03
+| SDN09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/292[#292]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/292[#292]
+|
+| M5
+|
+| Verify a detailed audit trail exists for all configuration changes to network filtering rules
+| pending
+|
+
+| Metadata Service
+| shared service source of truth for resource metadata such as nodes, GPUs, topology, and ownership. Enables scheduling, automation, and lifecycle management.
+| GCP Resource Manager APIs
+| [[META-XX-01]]META-XX-01
+|
+|
+|
+|
+| P1
+a|
+| LimitedEnv
+| M4
+|
+| TODO
+| approved
+|
+
+.4+| Cloud Control Plane
+.3+| Primary access mechanism for IaaS, provding provision and manage of compute, networking, and storage.
+.3+| AWS EC2 Control Plane
+| [[CTRL-XX-01]]CTRL-XX-01
+|
+|
+|
+|
+| P0
+a|
+|
+| M4
+|
+| Needs to have an API we can access from our tests to do actions
+| approved
+|
+
+| [[CAP02-01]]CAP02-01
+| CAP02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/203[#203]
+|
+|
+|
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/203[#203]
+|
+|
+|
+| Verify that fleet management API provides full set of information requested below: Node ID (Unique identifier for a GPU node) Health State (Healthy/Unhealthy classification) Instance ID (Identifier for virtual workload) Creation Timestamp (Time workload/node was created) Hardware Type (Descriptor for the hardware model) GPU Count (Number of GPUs per node) Top-levelAccount/ID (Identifier for the top-level organization/account) Sub-LevelProject/ID (Identifier for the nested project/sub-account) In Use (True/False status indicating if the GPU Node is turned on and in use) Region (Region of the data center where nodes are deployed)
+| approved
+|
+
+| [[CAP03-01]]CAP03-01
+| CAP03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/204[#204]
+|
+|
+|
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/204[#204]
+|
+|
+|
+| Resource discovery API: newly delivered capacity must be discoverable. This "Resource Index" must provide a stable resource identifer.
+| approved
+|
+
+| Stable Identifiers (Switches/Infrastructure)
+|
+| [[CNP08-05]]CNP08-05
+| CNP08
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/205[#205]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/205[#205]
+|
+| M5
+|
+| Verify that switch identifiers are stable across reboots and firmware updates
+| pending
+|
+
+.4+| Load Balancing
+.4+| Distributes traffic across services (e.g. inference endpoints) for availability and scale.
+.4+| AWS Network Load Balancer
+| [[LB-XX-01]]LB-XX-01
+|
+|
+|
+|
+| P2
+a|
+| LimitedEnv
+|
+|
+| CRUD a load balancer
+| approved
+|
+
+| [[LB-XX-02]]LB-XX-02
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+|
+|
+| Verify that traffic is distributed across multiple nodes
+| approved
+|
+
+| [[LB-XX-03]]LB-XX-03
+|
+|
+|
+|
+|
+a|
+|
+|
+|
+| Verify that nodes can be marked as down or up (for rolling deployments/etc)
+| approved
+|
+
+| [[LB-XX-04]]LB-XX-04
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+|
+|
+| Verify that no traffic is dropped during outages
+| approved
+|
+
+.14+| Break-Fix
+.3+| A break-fix service works with a variety of components to detect, triage, remediate, and validate nodes in an AI factory. The critical focus here is on the GPU nodes, but the system can scale beyond.
+.3+| Lazarus, Shoreline
+| [[BFX-XX-01]]BFX-XX-01
+|
+|
+|
+|
+| P1
+a|
+| LimitedEnv
+|
+|
+| Check that GPUd or Sentinel is running
+| approved
+|
+
+| [[BFX-XX-02]]BFX-XX-02
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+|
+|
+| Verify that Tenants can be notified, by some communication system, of planned future node maintenance
+| approved
+|
+
+| [[BFX-XX-03]]BFX-XX-03
+|
+|
+|
+|
+|
+a|
+| LimitedEnv
+|
+|
+| Verify that Tenants can be notified, by some communication system, of immediate node failure
+| approved
+|
+
+.5+| Breakfix API Lifecycle
+.5+|
+| [[BFX01-01]]BFX01-01
+| BFX01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/206[#206]
+| min_req
+|
+| P2
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/206[#206]
+|
+| M5
+|
+| Reset GPUs on an individual node via the Breakfix API
+| pending
+|
+
+| [[BFX01-02]]BFX01-02
+| BFX01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/207[#207]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/207[#207]
+|
+| M5
+|
+| Return an individual node to the provider for maintenance via the API
+| pending
+|
+
+| [[BFX01-03]]BFX01-03
+| BFX01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/208[#208]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/208[#208]
+|
+| M5
+|
+| Return a rack to the provider for maintenance via the API
+| pending
+|
+
+| [[BFX01-04]]BFX01-04
+| BFX01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/209[#209]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/209[#209]
+|
+| M5
+|
+| Cordon a node (mark unschedulable); verify no new workloads are placed; verify existing workloads continue
+| pending
+|
+
+| [[BFX01-05]]BFX01-05
+| BFX01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/210[#210]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/210[#210]
+|
+| M5
+|
+| Request a host replacement when health thresholds are breached; verify the node is removed from the pool
+| pending
+|
+
+.3+| Breakfix Events Query
+.3+|
+| [[BFX02-01]]BFX02-01
+| BFX02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/211[#211]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/211[#211]
+|
+| M5
+|
+| Query upcoming/current maintenance events for a node
+| pending
+|
+
+| [[BFX02-02]]BFX02-02
+| BFX02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/212[#212]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/212[#212]
+|
+| M5
+|
+| Query retirement notices for a node/rack
+| pending
+|
+
+| [[BFX02-03]]BFX02-03
+| BFX02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/213[#213]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/213[#213]
+|
+| M5
+|
+| Query historical repair status for a node
+| pending
+|
+
+.3+| Breakfix Diagnostics
+.3+|
+| [[BFX03-01]]BFX03-01
+| BFX03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/320[#320]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/320[#320]
+|
+| M5
+|
+| Query serial numbers of installed hardware (chassis, baseboard, NICs, CPU, GPU) — obfuscated but stable IDs are OK
+| pending
+|
+
+| [[BFX03-02]]BFX03-02
+| BFX03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/214[#214]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/214[#214]
+|
+| M5
+|
+| Inspect firmware versions of NV switch trays
+| pending
+|
+
+| [[BFX03-03]]BFX03-03
+| BFX03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/215[#215]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/215[#215]
+|
+| M5
+|
+| Obtain BMC kernel log messages for a node
+| pending
+|
+
+.35+| Data Services
+.19+| SDS Controller
+.6+| Manages software-defined storage services and policies. Orchestrates provisioning, tiers, and resiliency.
+.6+| AWS: EBS + FSx backend control planes
+| [[HSS01-01]]HSS01-01
+| HSS01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/327[#327]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/327[#327]
+|
+| M5
+|
+| Verify storage provisioning via vendor/NCP API
+| pending
+|
+
+| [[HSS02-01]]HSS02-01
+| HSS02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/328[#328]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/328[#328]
+|
+| M5
+|
+| Verify QoS — provisioned throughput meets requested minimum bandwidth and IOPS
+| pending
+|
+
+| [[HSS03-01]]HSS03-01
+| HSS03, K8S23
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/329[#329]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/329[#329]
+|
+| M5
+|
+| Verify K8s CSI integration for storage
+| pending
+|
+
+| [[HSS04-01]]HSS04-01
+| HSS04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/330[#330]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/330[#330]
+|
+| M5
+|
+| Verify quota limits can be set on user workloads/volumes
+| pending
+|
+
+| [[HSS05-01]]HSS05-01
+| HSS05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/331[#331]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/331[#331]
+|
+| M5
+|
+| Verify non-disruptive upgrades (NVIDIA can defer maintenance up to 2 weeks)
+| pending
+|
+
+| [[STOR-XX-01]]STOR-XX-01
+|
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| Storage: Config/default/access to network provided storage
+| pending
+|
+
+.3+| Home Directory Storage
+.3+|
+| [[DIR02-01]]DIR02-01
+| DIR02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/326[#326]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/326[#326]
+|
+| M5
+|
+| Verify NFS protocol shared storage is available
+| pending
+|
+
+| [[DIR01-01]]DIR01-01
+| DIR01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/324[#324]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/324[#324]
+|
+| M5
+|
+| Verify configurable filesystem-wide quota limits
+| pending
+|
+
+| [[DIR01-02]]DIR01-02
+| DIR01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/325[#325]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/325[#325]
+|
+| M5
+|
+| Verify usage accounting for uid/gids
+| pending
+|
+
+.4+| Data Movement
+.4+|
+| [[DMS01-01]]DMS01-01
+| DMS01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/263[#263]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/263[#263]
+|
+| M5
+|
+| Verify a dedicated K8s cluster (or ability to create one) for the data mover stack
+| pending
+|
+
+| [[DMS02-01]]DMS02-01
+| DMS02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/264[#264]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/264[#264]
+|
+| M5
+|
+| Verify dedicated CPU nodes are available for data mover with high-performance networking
+| pending
+|
+
+| [[DMS03-01]]DMS03-01
+| DMS03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/265[#265]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/265[#265]
+|
+| M5
+|
+| Verify the same filesystem mounted on GPU nodes is accessible from data mover nodes
+| pending
+|
+
+| [[DMS05-01]]DMS05-01
+| DMS05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/266[#266]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/266[#266]
+|
+| M5
+|
+| Verify stable egress IP for allowlisting access to NVIDIA services
+| pending
+|
+
+.4+| DGXC-Managed Storage Deployment
+.4+|
+| [[STG02-01]]STG02-01
+| STG02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/358[#358]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/358[#358]
+|
+| M5
+|
+| Verify optional skip-sanitization flag during break/fix where tenancy doesn't change
+| pending
+|
+
+| [[STG03-01]]STG03-01
+| STG03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/359[#359]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/359[#359]
+|
+| M5
+|
+| Verify stable IP assignment for storage nodes across lifecycle operations
+| pending
+|
+
+| [[STG04-01]]STG04-01
+| STG04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/360[#360]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/360[#360]
+|
+| M5
+|
+| Verify out-of-band failure detection (device, network, memory, drive)
+| pending
+|
+
+| [[STG05-01]]STG05-01
+| STG05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/361[#361]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/361[#361]
+|
+| M5
+|
+| Verify topology observability — visibility into failure domains for physical diversity
+| pending
+|
+
+| Storage Security
+|
+| [[SEC04-01]]SEC04-01
+| SEC04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/296[#296]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/296[#296]
+|
+| M5
+|
+| Verify least-privilege access policies (resource-based, user-based, network-based)
+| pending
+|
+
+| RDMA Memory Protection
+|
+| [[HSS06-01]]HSS06-01
+| HSS06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/332[#332]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/332[#332]
+|
+| M5
+|
+| Verify storage systems using RDMA enforce memory protection via authorization keys for both local and remote access
+| pending
+|
+
+.8+| Parallel File System Services
+.8+| high performance file system optimized for AI and HPC workloads
+.8+|
+| [[HSS07-01]]HSS07-01
+| HSS07
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/333[#333]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/333[#333]
+|
+| M5
+|
+| Verify that a parallel high-speed filesystem can be provisioned via API
+| pending
+|
+
+| [[HSS09-01]]HSS09-01
+| HSS09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/334[#334]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/334[#334]
+|
+| M5
+|
+| Verify multiple filesystems can exist within total capacity (minimum FS size <= 50 TiB)
+| pending
+|
+
+| [[HSS10-01]]HSS10-01
+| HSS10
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/335[#335]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/335[#335]
+|
+| M5
+|
+| Verify live filesystem expansion (capacity, inodes, IO, metadata)
+| pending
+|
+
+| [[HSS12-01]]HSS12-01
+| HSS12
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/336[#336]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/336[#336]
+|
+| M5
+|
+| Verify uid/gid/project-id soft and hard quotas with enforcement
+| pending
+|
+
+| [[HSS13-01]]HSS13-01
+| HSS13
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/337[#337]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/337[#337]
+|
+| M5
+|
+| Verify root-squash can be enabled and disabled at any time
+| pending
+|
+
+| [[HSS14-01]]HSS14-01
+| HSS14
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/338[#338]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/338[#338]
+|
+| M5
+|
+| Verify the filesystem can be mounted with flock
+| pending
+|
+
+| [[HSS15-01]]HSS15-01
+| HSS15
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/339[#339]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/339[#339]
+|
+| M5
+|
+| Verify changelog/audit data is accessible (tracking by uid/gid, file/dir operations)
+| pending
+|
+
+| [[HSS18-01]]HSS18-01
+| HSS18
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/340[#340]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/340[#340]
+|
+| M5
+|
+| Verify client multipathing to all storage servers
+| pending
+|
+
+| Object Storage Service
+| durable, scalable object storage for things like datasets, model artifacts, logs, backups.
+| S3
+| [[DATASVC-XX-01]]DATASVC-XX-01
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/262[#262]
+| min_req
+|
+| P2
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/262[#262]
+|
+| M5
+|
+| Verify S3-compatible API access with authenticated endpoints
+| pending
+|
+
+.4+| Block Storage Services
+.4+| persistent block volumes for a wide range of uses
+.4+| AWS EBS, GCP Persistent Disk
+| [[K8S23-01]]K8S23-01
+| K8S23
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/272[#272]
+| min_req
+|
+| P2
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/272[#272]
+|
+| M5
+|
+| Verify dynamic volume provisioning via CSI
+| pending
+|
+
+| [[DATASVC-XX-02]]DATASVC-XX-02
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/321[#321]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/321[#321]
+|
+| M5
+|
+| Verify volume snapshots
+| pending
+|
+
+| [[DATASVC-XX-03]]DATASVC-XX-03
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/322[#322]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/322[#322]
+|
+| M5
+|
+| Verify volume resizing
+| pending
+|
+
+| [[DATASVC-XX-04]]DATASVC-XX-04
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/323[#323]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/323[#323]
+|
+| M5
+|
+| Verify persistent block volumes survive instance restarts
+| pending
+|
+
+| Cache Services
+| in-memory data store for frequently used data
+| ElastiCache
+| [[DATASVC-XX-05]]DATASVC-XX-05
+|
+|
+|
+|
+| P2
+a|
+| LimitedEnv
+|
+|
+| Create a managed cache instance, write a key-value pair, read it back, verify data integrity
+| pending
+|
+
+| Vector Store
+| stores and indexes embeddings for semantic search and RAG generation
+| Vertex AI Vector Search
+| [[DATASVC-XX-06]]DATASVC-XX-06
+|
+|
+|
+|
+| P2
+a|
+| LimitedEnv
+|
+|
+| Create a vector store, insert an embedding, perform similarity search, verify result
+| pending
+|
+
+| Relational Database
+| structured database (SQL) service
+| GCP Cloud SQL
+| [[DATASVC-XX-07]]DATASVC-XX-07
+|
+|
+|
+|
+| P2
+a|
+| LimitedEnv
+|
+|
+| Create a managed SQL database, create a table, insert/query data, verify results
+| pending
+|
+
+.58+| Workload Orchestration
+| Backup and Recovery
+| Centralized managed service to automate and govern data backup across services
+| AWS backup
+| [[DATASVC-XX-08]]DATASVC-XX-08
+|
+|
+|
+|
+| P2
+a|
+|
+| M4
+|
+| Create a backup of a block volume, delete original, restore from backup, verify data is the same as the original
+| pending
+|
+
+| Model Registry
+| storage with versioning for models and AI artifacts
+| AWS Sagemaker Model Registry
+| [[DATASVC-XX-09]]DATASVC-XX-09
+|
+|
+|
+|
+| P2
+a|
+|
+|
+|
+| Push a model artifact with a version tag, retrieve by version, verify it matches (prefer a smaller reference model)
+| pending
+|
+
+.10+| Slurm Control Plane
+.10+| control plane to schedule and manage large-scale GPU batch training with SLURM semantics.
+.10+| AWS ParallelCluster
+| [[SLURM-XX-01]]SLURM-XX-01
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Create a SLURM instance using the software platform
+| done
+|
+
+| [[SLURM-XX-02]]SLURM-XX-02
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmInfoAvailable
+| done
+|
+
+| [[SLURM-XX-03]]SLURM-XX-03
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmPartition cpu and gpu
+| done
+|
+
+| [[SLURM-XX-04]]SLURM-XX-04
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmJobSubmission
+| done
+|
+
+| [[SLURM-XX-05]]SLURM-XX-05
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmGpuAllocation 1gpu and 2gpu
+| done
+|
+
+| [[SLURM-XX-06]]SLURM-XX-06
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmNodeJobExecution cpu and gpu
+| done
+|
+
+| [[SLURM-XX-07]]SLURM-XX-07
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmGpuStressWorkload
+| done
+|
+
+| [[SLURM-XX-08]]SLURM-XX-08
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmNcclMultiNodeWorkload
+| done
+|
+
+| [[SLURM-XX-09]]SLURM-XX-09
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmSbatchWorkload gpu and cpu
+| done
+|
+
+| [[SLURM-XX-10]]SLURM-XX-10
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| SlurmSbatchWorkload-inline
+| done
+|
+
+.45+| Managed Kubernetes Control Plane
+| Tenant-isolated Kubernetes control planes for managing k8s workloads. does placement, networking, lifecyle mgmt.
+| AWS EKS, GCP GKE
+| [[K8S05-01]]K8S05-01
+| K8S05
+|
+| min_req
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Create a K8s Instance using the software platform (CLI, Terraform)
+| done
+|
+
+.3+| Full lifecycle management
+.3+|
+| [[K8S-XX-01]]K8S-XX-01
+|
+|
+| min_req
+|
+|
+a|
+|
+| M4
+|
+| Run through all the steps of the k8s lifecycle management, including user-initated CP update
+| approved
+|
+
+| [[SEC23-01]]SEC23-01
+| SEC23
+|
+| min_req
+|
+|
+a|
+|
+|
+|
+| The control plane should automatically add more capacity when load increases
+| pending
+|
+
+| [[K8S27-01]]K8S27-01
+| K8S27
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/217[#217]
+| min_req
+|
+|
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/217[#217]
+|
+|
+|
+| Pin Control Plane instances to a specific count to handle a particular load-limit
+| pending
+|
+
+.4+| Control Plane Isolation
+.4+|
+| [[K8S14-01]]K8S14-01
+| K8S14
+|
+| min_req
+|
+|
+a|
+|
+| M4
+|
+| per tenant k8s control plane outside of the tenant cluster/VPC
+| approved
+|
+
+| [[K8S-XX-02]]K8S-XX-02
+|
+|
+| min_req
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Be able to run k8s workloads
+| done
+|
+
+| [[K8S-XX-03]]K8S-XX-03
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| K8s Nim Inference
+| done
+|
+
+| [[K8S-XX-04]]K8S-XX-04
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| K8s Nim Helm
+| done
+|
+
+| Topology based placement
+|
+| [[K8S-XX-05]]K8S-XX-05
+|
+|
+| min_req
+|
+| P0
+a|
+|
+|
+|
+| K8s Nccl
+| approved
+|
+
+| k8s upstream proxy
+|
+| [[K8S-XX-06]]K8S-XX-06
+|
+|
+| min_req
+| k8s05
+| P0
+a|
+|
+|
+|
+| validate adherence to upstream proxy requirements (service to pod load balancing, acces to internal services)
+| approved
+|
+
+| Dynamic Resource Allocaiton
+|
+| [[K8S24-01]]K8S24-01
+| K8S24
+|
+| min_req
+| k8s06/22
+| P0
+a|
+|
+|
+|
+| verify that the k8s cluster supports the DRA API (resources.k8s.io) to get GPUs on the same nvlink
+| approved
+|
+
+| Run k8s conformance tests
+|
+| [[K8S01-01]]K8S01-01
+| K8S01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/233[#233]
+| min_req
+| k8s01
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/233[#233]
+|
+|
+|
+| get versions, topology, core APIs by: (a) pass CNCF k8s conformance: https://github.com/cncf/k8s-conformance (b) add AI conformance: [https://github.com/cncf/k8s-ai-conformance](https://github.com/cncf/k8s-ai-conformance)
+| pending
+|
+
+| k8s service account OIDC
+|
+| [[K8S17-01]]K8S17-01
+| K8S17
+|
+| min_req
+|
+|
+a|
+|
+|
+|
+| test that the service account can be authorized with OIDC
+| approved
+|
+
+| Test support for CRDs and Validating/Mutating Admission Controllers (webhooks)
+|
+| [[K8S21-01]]K8S21-01
+| K8S21
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/218[#218]
+| min_req
+| k8s19
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/218[#218]
+|
+|
+|
+| create a CRD, create webhook, and test validation/mutation requirement
+| approved
+|
+
+| TODO: L3 networking logging
+|
+| [[K8S-XX-07]]K8S-XX-07
+|
+|
+| min_req
+| K8s16
+| P1
+a|
+|
+|
+|
+| Verify that pod-to-pod L3 traffic flow logs are available and queryable
+| approved
+|
+
+| CNI Compliance
+|
+| [[K8S22-01]]K8S22-01
+| K8S22
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/219[#219]
+| min_req
+| K8s20
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/219[#219]
+|
+|
+|
+| Apply a NetworkPolicy; verify pod connectivity is restricted as expected; verify IPv4 and IPv6 addresses are assigned on dual-stack nodes
+| approved
+|
+
+.6+| TODO: Dynamic provisioning, snapshots, and resizing
+.6+|
+| [[K8S23-02]]K8S23-02
+| K8S23
+|
+| min_req
+| K8s21
+|
+a|
+|
+|
+|
+| TODO: Helm version
+| approved
+|
+
+| [[K8S23-03]]K8S23-03
+| K8S23
+|
+| min_req
+| K8s21
+|
+a|
+|
+|
+|
+| TODO: Kustomize version
+| approved
+|
+
+| [[K8S23-04]]K8S23-04
+| K8S23
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/273[#273]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/273[#273]
+|
+| M5
+|
+| Verify CSI supports block, shared filesystem, and NFS storage
+| pending
+|
+
+| [[K8S23-05]]K8S23-05
+| K8S23
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/274[#274]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/274[#274]
+|
+| M5
+|
+| Verify CSI supports both static and dynamic provisioning via PVs and PVCs
+| pending
+|
+
+| [[K8S23-06]]K8S23-06
+| K8S23
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/275[#275]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/275[#275]
+|
+| M5
+|
+| Verify CSI credentials are tenant cluster scoped (no cross-cluster access)
+| pending
+|
+
+| [[K8S23-07]]K8S23-07
+| K8S23
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/276[#276]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/276[#276]
+|
+| M5
+|
+| Verify APIs to query storage usage against overall cluster quota with per-PVC/Volume breakdown
+| pending
+|
+
+.2+| NVIDIA Operator support
+.2+|
+| [[K8S25-01]]K8S25-01
+| K8S25
+|
+| min_req
+| K8S23
+| P0
+a|
+|
+|
+|
+| TODO: Compatibility with the mainline NVIDIA GPU Operator
+| approved
+|
+
+| [[K8S25-02]]K8S25-02
+| K8S25
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/220[#220]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/220[#220]
+|
+| M5
+|
+| Verify provider-default accelerator operators and drivers can be replaced or overridden with tenant-required versions
+| pending
+|
+
+.2+| K8s Versioning & Compliance
+.2+|
+| [[K8S02-01]]K8S02-01
+| K8S02
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify support for the three most recent minor releases (N-2)
+| pending
+|
+
+| [[K8S02-02]]K8S02-02
+| K8S02
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify automated control plane security patching with no/minimal downtime
+| pending
+|
+
+.2+| Zero-Downtime Upgrades
+.2+|
+| [[K8S09-01]]K8S09-01
+| K8S09
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Perform a minor version control plane upgrade and verify zero application downtime
+| pending
+|
+
+| [[K8S10-01]]K8S10-01
+| K8S10
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Perform a rolling node upgrade and verify disruption budgets are respected
+| pending
+|
+
+| HA Control Plane
+|
+| [[K8S11-01]]K8S11-01
+| K8S11
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify the control plane recovers from a single-node failure
+| pending
+|
+
+| Backup & Disaster Recovery
+|
+| [[K8S12-01]]K8S12-01
+| K8S12
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify backup and recovery within defined RPO/RTO
+| pending
+|
+
+| K8s Access Controls
+|
+| [[K8S15-01]]K8S15-01
+| K8S15
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/271[#271]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/271[#271]
+|
+| M5
+|
+| Verify the K8s API endpoint has network access controls (firewall/private link)
+| pending
+|
+
+| K8s Encryption
+|
+| [[K8S19-01]]K8S19-01
+| K8S19
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify at-rest encryption is enabled for etcd
+| pending
+|
+
+.2+| Certificate Management
+.2+|
+| [[SEC09-01]]SEC09-01
+| SEC09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/301[#301]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/301[#301]
+|
+| M5
+|
+| Verify certificates are rotated on a 60-day cycle
+| pending
+|
+
+| [[SEC09-02]]SEC09-02
+| SEC09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/302[#302]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/302[#302]
+|
+| M5
+|
+| Verify support for both provider-managed and customer-managed keys
+| pending
+|
+
+| Autoscaling
+|
+| [[K8S-XX-08]]K8S-XX-08
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/267[#267]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/267[#267]
+|
+| M5
+|
+| Verify Cluster Autoscaler integration (upstream)
+| pending
+|
+
+| Kubernetes Security Response
+|
+| [[K8S04-01]]K8S04-01
+| K8S04
+|
+| min_req
+| INFO
+| INFO
+a|
+|
+| M5
+|
+| Verify NCP participates in the Kubernetes Security Response Committee (SRC) process and can patch disclosed vulnerabilities during embargo
+| pending
+|
+
+.4+| Node Pool Lifecycle Management
+.4+|
+| [[K8S06-01]]K8S06-01
+| K8S06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/269[#269]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/269[#269] +
+icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/221[#221]
+|
+| M5
+|
+| Create a K8s node pool via API/CLI specifying node type (CPU or GPU instance type)
+| pending
+|
+
+| [[K8S06-02]]K8S06-02
+| K8S06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/270[#270]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/270[#270] +
+icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/222[#222]
+|
+| M5
+|
+| Update a K8s node pool (e.g., scale to a target count)
+| pending
+|
+
+| [[K8S06-03]]K8S06-03
+| K8S06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/223[#223]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/223[#223]
+|
+| M5
+|
+| Delete a K8s node pool
+| pending
+|
+
+| [[K8S06-04]]K8S06-04
+| K8S06
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/224[#224]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/224[#224]
+|
+| M5
+|
+| Verify default node labels and taints can be specified when a node joins the cluster via node pool
+| pending
+|
+
+| API Server Metrics
+|
+| [[K8S07-01]]K8S07-01
+| K8S07
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/225[#225]
+| min_req
+|
+| P1
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/225[#225]
+|
+| M5
+|
+| Verify API Server metrics are available in a Prometheus-scrapable format for SLO measurement
+| pending
+|
+
+| Public OIDC Endpoint
+|
+| [[K8S18-01]]K8S18-01
+| K8S18
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/226[#226]
+| min_req
+|
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/226[#226]
+|
+| M5
+|
+| Verify the cluster exposes a cluster-specific OIDC Issuer endpoint for workload identity federation
+| pending
+|
+
+| K8s Control Plane Logging
+|
+| [[K8S20-01]]K8S20-01
+| K8S20
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/227[#227]
+| min_req
+|
+| P1
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/227[#227]
+|
+| M5
+|
+| Verify ability to view or export Kubernetes control plane logs (apiserver, kcm)
+| pending
+|
+
+| K8s Performance
+|
+| [[K8S-XX-09]]K8S-XX-09
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/268[#268]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/268[#268]
+|
+| M5
+|
+| Verify the managed K8s service meets standard Kubernetes performance tests to max cluster size
+| pending
+|
+
+| Multi-Cluster Support
+|
+| [[K8S26-01]]K8S26-01
+| K8S26
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/277[#277]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/277[#277]
+|
+| M5
+|
+| Support multiple clusters in the same tenancy and in the same VPC
+| pending
+|
+
+| Power Policy Management
+| Control plane to manage power allocation (re-allocation) based on need and availability
+| Boost and Flex (DPS)
+| [[POWER-XX-01]]POWER-XX-01
+|
+|
+|
+|
+| P2
+a|
+| MiniCloud
+|
+|
+| TODO
+| approved
+|
+
+.3+| AI Platform & User Access
+| Host API Gateway
+| Service control plane "front door" that enforces authn/authz via IAM
+| AWS/GCP API Gateway
+| [[APIGW-XX-01]]APIGW-XX-01
+|
+|
+|
+|
+| P2
+a|
+|
+|
+|
+| TODO
+| approved
+|
+
+| Al Platform 1..N Control Planes
+| Placeholder for all AI platform CPs you might run. E.g. Run:ai, NVCF, Redhat Inference Server
+|
+| [[AICP-XX-01]]AICP-XX-01
+|
+|
+|
+|
+| P2
+a|
+|
+|
+|
+| TODO
+| approved
+|
+
+| Web Management Dashboard
+|
+|
+| [[WEBUI-XX-01]]WEBUI-XX-01
+|
+|
+|
+|
+| P2
+a|
+| LimitedEnv
+| M5
+|
+| TODO
+| approved
+|
+
+.27+| Observability
+.19+| Observability Collectors
+.4+|
+.4+|
+| [[OBS-XX-01]]OBS-XX-01
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Validate that an OTel endpoint is provided and some data can be pulled from it
+| done
+|
+
+| [[OBS-XX-02]]OBS-XX-02
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Logging information about the control plane is available
+| done
+|
+
+| [[OBS-XX-03]]OBS-XX-03
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Logging information from instances
+| done
+|
+
+| [[OBS-XX-04]]OBS-XX-04
+|
+|
+|
+|
+| P0
+a|
+| LimitedEnv
+| M0
+|
+| Alerts can be issued by the system in case of problems
+| done
+|
+
+| Telemetry Delivery
+|
+| [[OBS-XX-05]]OBS-XX-05
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/342[#342]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/342[#342]
+|
+| M5
+|
+| Verify telemetry latency is no longer than 120 seconds
+| pending
+|
+
+.5+| Network Telemetry
+.5+|
+| [[OBS-XX-06]]OBS-XX-06
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/343[#343]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/343[#343]
+|
+| M5
+|
+| Verify telemetry is available for North-South (front-end) network
+| pending
+|
+
+| [[OBS-XX-07]]OBS-XX-07
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/344[#344]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/344[#344]
+|
+| M5
+|
+| Verify telemetry is available for East-West (back-end / GPU interconnect) network
+| pending
+|
+
+| [[OBS-XX-08]]OBS-XX-08
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/345[#345]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/345[#345]
+|
+| M5
+|
+| Verify telemetry is available for Management network
+| pending
+|
+
+| [[OBS-XX-09]]OBS-XX-09
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/346[#346]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/346[#346]
+|
+| M5
+|
+| Verify telemetry is available for NVSwitch Fabric (GB200+)
+| pending
+|
+
+| [[OBS-XX-10]]OBS-XX-10
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/347[#347]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/347[#347]
+|
+| M5
+|
+| Verify telemetry is available for Host network (NIC-level)
+| pending
+|
+
+.9+| Required Logs
+.9+|
+| [[OBS-XX-11]]OBS-XX-11
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/348[#348]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/348[#348]
+|
+| M5
+|
+| Verify Fabric Manager logs are available (where applicable)
+| pending
+|
+
+| [[OBS-XX-12]]OBS-XX-12
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/349[#349]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/349[#349]
+|
+| M5
+|
+| Verify Subnet Manager logs are available (where applicable)
+| pending
+|
+
+| [[OBS-XX-13]]OBS-XX-13
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/350[#350]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/350[#350]
+|
+| M5
+|
+| Verify UFM Event logs are available
+| pending
+|
+
+| [[OBS-XX-14]]OBS-XX-14
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/351[#351]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/351[#351]
+|
+| M5
+|
+| Verify general switch logs are available
+| pending
+|
+
+| [[OBS-XX-15]]OBS-XX-15
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/352[#352]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/352[#352]
+|
+| M5
+|
+| Verify switch syslogs are available
+| pending
+|
+
+| [[OBS-XX-16]]OBS-XX-16
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/353[#353]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/353[#353]
+|
+| M5
+|
+| Verify switch kernel logs are available
+| pending
+|
+
+| [[OBS-XX-17]]OBS-XX-17
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/354[#354]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/354[#354]
+|
+| M5
+|
+| Verify BMC SEL logs are available
+| pending
+|
+
+| [[OBS-XX-18]]OBS-XX-18
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/355[#355]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/355[#355]
+|
+| M5
+|
+| Verify host syslogs are available
+| pending
+|
+
+| [[OBS-XX-19]]OBS-XX-19
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/356[#356]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/356[#356]
+|
+| M5
+|
+| Verify VPC Flow logs (all ingress/egress traffic) are available
+| pending
+|
+
+.8+| Telemetry / Data Lakes
+.3+|
+.3+|
+| [[TELEM-XX-01]]TELEM-XX-01
+|
+|
+|
+|
+| P1
+a|
+| LimitedEnv
+|
+|
+| TODO
+| approved
+|
+
+| [[TELEM-XX-02]]TELEM-XX-02
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/120[#120]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/120[#120]
+| MiniCloud
+| M3
+|
+| Read only access to a BMaaS system's serial console
+| approved
+|
+
+| [[TELEM-XX-03]]TELEM-XX-03
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/121[#121]
+| min_req
+| MinAPI
+| P0
+a| icon:check-circle[role=green] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/121[#121]
+| LimitedEnv
+| M3
+|
+| Read only access to a VM serial console
+| approved
+|
+
+| BMC/Redfish Telemetry
+|
+| [[TELEM-XX-04]]TELEM-XX-04
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/362[#362]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/362[#362]
+|
+| M5
+|
+| Verify BMC/Redfish telemetry is accessible via API for GPU metrics not available from the host OS
+| pending
+|
+
+.2+| Storage Telemetry
+.2+|
+| [[TELEM-XX-05]]TELEM-XX-05
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/363[#363]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/363[#363]
+|
+| M5
+|
+| Verify storage resource capacity metrics are available (used/free/total)
+| pending
+|
+
+| [[TELEM-XX-06]]TELEM-XX-06
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/364[#364]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/364[#364]
+|
+| M5
+|
+| Verify storage performance metrics are available (bandwidth, IOPS, latency)
+| pending
+|
+
+.2+| NVLink Switch Telemetry
+.2+|
+| [[TELEM-XX-07]]TELEM-XX-07
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/365[#365]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/365[#365]
+|
+| M5
+|
+| Verify NVLink metrics are available from the GPU perspective (per-link counters, bandwidth utilization)
+| pending
+|
+
+| [[TELEM-XX-08]]TELEM-XX-08
+|
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/366[#366]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/366[#366]
+|
+| M5
+|
+| Verify NVLink metrics are available from the switch perspective (port-level counters, error rates)
+| pending
+|
+
+.23+| Security & Identity
+.10+| Network Security
+.4+| BMC Security
+.4+|
+| [[SEC12-01]]SEC12-01
+| SEC12
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/306[#306]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/306[#306]
+|
+| M5
+|
+| Verify BMC management is on a dedicated, restricted network (physically separate or VLAN/VRF-isolated)
+| pending
+|
+
+| [[SEC12-02]]SEC12-02
+| SEC12
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/307[#307]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/307[#307]
+|
+| M5
+|
+| Verify BMC interfaces are not reachable from tenant networks
+| pending
+|
+
+| [[CNP10-01]]CNP10-01
+| CNP10
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/260[#260]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/260[#260]
+|
+| M5
+|
+| Verify IPMI is disabled; Redfish over TLS is used with AAA
+| pending
+|
+
+| [[SEC12-03]]SEC12-03
+| SEC12
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/308[#308]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/308[#308]
+|
+| M5
+|
+| Verify BMC is only accessible via a hardened bastion (jumphost) server; direct public/corporate network access is blocked
+| pending
+|
+
+| Network Traffic Encryption
+|
+| [[SEC13-01]]SEC13-01
+| SEC13
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/309[#309]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/309[#309]
+|
+| M5
+|
+| Verify mTLS (or equivalent) for all east-west and north-south traffic
+| pending
+|
+
+.2+| Edge Security
+.2+|
+| [[SEC14-01]]SEC14-01
+| SEC14
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/311[#311]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/311[#311]
+|
+| M5
+|
+| Verify no public internet access to API endpoints by default
+| pending
+|
+
+| [[SEC13-02]]SEC13-02
+| SEC13
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/310[#310]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/310[#310]
+|
+| M5
+|
+| Verify insecure protocols (HTTP, SSLv3, TLSv1) are disabled
+| pending
+|
+
+.2+| InfiniBand Security
+.2+|
+| [[SDN04-04]]SDN04-04
+| SDN04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/287[#287]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/287[#287]
+|
+| M5
+|
+| Verify IB tenant isolation — compute dedicated to NVIDIA is isolated from other customers
+| pending
+|
+
+| [[SDN04-05]]SDN04-05
+| SDN04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/288[#288]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/288[#288]
+|
+| M5
+|
+| Verify IB keys are configured: P_Key, Management Key, Aggregation Management Key, VendorSpecific Key, CongestionControl Key, Node2Node Key, Manager2Node Key
+| pending
+|
+
+| Tenancy Isolation
+|
+| [[SEC11-01]]SEC11-01
+| SEC11
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/305[#305]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/305[#305]
+|
+| M5
+|
+| Verify hard physical or logical isolation between tenants for network, data, compute, and storage resources
+| pending
+|
+
+.4+| Authentication
+| User Authentication
+|
+| [[SEC01-01]]SEC01-01
+| SEC01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/293[#293]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/293[#293]
+|
+| M5
+|
+| Verify user authentication via OIDC for platform services
+| pending
+|
+
+| In-Cluster Authentication
+|
+| [[SEC02-01]]SEC02-01
+| SEC02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/294[#294]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/294[#294]
+|
+| M5
+|
+| Verify workloads and nodes receive short-lived credentials/tokens
+| pending
+|
+
+| External Service Authentication
+|
+| [[SEC03-01]]SEC03-01
+| SEC03
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/295[#295]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/295[#295]
+|
+| M5
+|
+| Verify out-of-cluster service accounts can authenticate with long-lived credentials
+| pending
+|
+
+| Admin Interface Security
+|
+| [[SEC07-01]]SEC07-01
+| SEC07
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/298[#298]
+| min_req
+| INFO
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/298[#298]
+|
+| M5
+|
+| Verify all administrative interfaces (UI, CLI, API) are protected by Multi-Factor Authentication
+| pending
+|
+
+| Authorization
+| RBAC
+|
+| [[SEC04-02]]SEC04-02
+| SEC04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/297[#297]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/297[#297]
+|
+| M5
+|
+| Assign a minimal role to a user; verify they cannot perform actions outside that role on Compute, Storage, and Network APIs
+| pending
+|
+
+.2+| Audit & Logging
+.2+| Audit & Logging
+.2+|
+| [[SEC08-01]]SEC08-01
+| SEC08
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/299[#299]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/299[#299]
+|
+| M5
+|
+| Perform a management API call; verify an audit log entry is generated with correct metadata
+| pending
+|
+
+| [[SEC08-02]]SEC08-02
+| SEC08
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/300[#300]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/300[#300]
+|
+| M5
+|
+| Verify audit logs are retained for at least 30 days
+| pending
+|
+
+.6+| Hardware Security & Compliance
+.3+| Data Sanitization
+.3+|
+| [[SEC21-04]]SEC21-04
+| SEC21
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/312[#312]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/312[#312]
+|
+| M5
+|
+| Verify memory sanitization between tenants
+| pending
+|
+
+| [[SEC21-05]]SEC21-05
+| SEC21
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/313[#313]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/313[#313]
+|
+| M5
+|
+| Verify SRAM/GPU memory is sanitized between tenants
+| pending
+|
+
+| [[SEC21-06]]SEC21-06
+| SEC21, SEC22
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/314[#314]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/314[#314]
+|
+| M5
+|
+| Verify TPM and BIOS are reset during tenant transitions or hardware replacement
+| pending
+|
+
+| At-Rest Encryption
+|
+| [[SEC20-01]]SEC20-01
+| SEC20
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify all data at rest is encrypted via SED on local NVMe/SSD and network-attached storage
+| pending
+|
+
+.2+| Key Management
+.2+|
+| [[SEC09-03]]SEC09-03
+| SEC09, SEC10
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/303[#303]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/303[#303]
+|
+| M5
+|
+| Verify a centralized KMS is used for all encryption keys and secrets
+| pending
+|
+
+| [[SEC09-04]]SEC09-04
+| SEC09
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/304[#304]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/304[#304]
+|
+| M5
+|
+| Verify support for Customer Managed Keys (BYOK)
+| pending
+|
+
+.7+| Network Transport
+| Backend Switch Fabric API
+| Backend Switch Fabric API
+|
+| [[NET01-01]]NET01-01
+| NET01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/278[#278]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/278[#278]
+|
+| M5
+|
+| Query the API for a compute node and verify it returns backend switch IDs (leaf, spine, core)
+| pending
+|
+
+| NVLink Domain API
+| NVLink Domain API
+|
+| [[NET02-02]]NET02-02
+| NET02
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/279[#279]
+| min_req
+|
+| P0
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/279[#279]
+|
+| M5
+|
+| Query the NVLink domain ID for a compute node supporting NVLink
+| pending
+|
+
+.5+| Transport Connectivity
+| CorpIT Interconnect
+|
+| [[NET04-01]]NET04-01
+| NET04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/280[#280]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/280[#280]
+|
+| M5
+|
+| Verify Private Cloud Interconnect to NVIDIA CorpIT is operational
+| pending
+|
+
+.2+| DGXC Storage Interconnect
+.2+|
+| [[NET05-01]]NET05-01
+| NET05
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify high-bandwidth Private Cloud Interconnect to DGXC on-prem object storage
+| pending
+|
+
+| [[NET05-02]]NET05-02
+| NET05
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify end-to-end MACsec encryption (fail-closed)
+| pending
+|
+
+.2+| Cluster Internet Access
+.2+|
+| [[NET06-01]]NET06-01
+| NET06
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify egress NAT IPs are a static pool dedicated to NVIDIA
+| pending
+|
+
+| [[NET06-02]]NET06-02
+| NET06
+|
+| min_req
+|
+| INFO
+a|
+|
+| M5
+|
+| Verify redundant upstream paths for internet connectivity
+| pending
+|
+
+.5+| Capacity & Fleet Management
+| Governance Metrics
+| Governance Metrics
+|
+| [[CAP01-01]]CAP01-01
+| CAP01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/251[#251]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/251[#251]
+|
+| M5
+|
+| Query and verify governance API returns Delivered, Healthy, Reserved, and Active metrics for nodes/GPUs
+| pending
+|
+
+.2+| Capacity Reservations
+.2+| Capacity Reservations
+.2+|
+| [[CAP04-01]]CAP04-01
+| CAP04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/252[#252]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/252[#252]
+|
+| M5
+|
+| Verify a set of resources can be logically grouped and pinned to an account
+| pending
+|
+
+| [[CAP04-02]]CAP04-02
+| CAP04
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/253[#253]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/253[#253]
+|
+| M5
+|
+| Verify atomic allocation of a topology block as a single unit
+| pending
+|
+
+.2+| Unified Health APIs
+.2+| Unified Health APIs
+.2+|
+| [[CAP05-01]]CAP05-01
+| CAP05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/254[#254]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/254[#254]
+|
+| M5
+|
+| Verify per-host health API returns real-time GPU state, thermal status, memory health
+| pending
+|
+
+| [[CAP05-02]]CAP05-02
+| CAP05
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/255[#255]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/255[#255]
+|
+| M5
+|
+| Verify primitive-level health aggregation (cluster, nodegroup, or reservation level)
+| pending
+|
+
+.4+| Benchmarking
+.4+| Exemplar
+.4+| Run a mini-cloud configuration of Exemplar benchmarks
+.4+|
+| [[BM01-01]]BM01-01
+| BM01
+|
+| min_req
+|
+|
+a|
+|
+|
+|
+| Simulate Exemplar across 512 GPU cluster using latest dgxc-benchmarking release
+| pending
+|
+
+| [[BENCH-XX-01]]BENCH-XX-01
+|
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| NVMesh checks?
+| pending
+|
+
+| [[BENCH-XX-02]]BENCH-XX-02
+|
+|
+|
+| REVIEW
+|
+a|
+|
+|
+|
+| IPv4 and IPv6 checks?
+| pending
+|
+
+| [[BM01-02]]BM01-02
+| BM01
+| https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/249[#249]
+| min_req
+|
+| P1
+a| icon:exclamation-circle[role=red] https://github.com/NVIDIA/ISV-NCP-Validation-Suite/issues/249[#249]
+|
+| M5
+|
+| Verify performance is within 5% of NVIDIA Reference
+| pending
+|
+
+|===
