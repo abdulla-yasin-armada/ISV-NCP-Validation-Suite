@@ -11,14 +11,34 @@ import argparse
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
+from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
+
+
+def _probe(client: BridgeClient, path: str) -> tuple[bool, str]:
+    """GET a health endpoint using the authenticated session; return (passed, message).
+
+    Uses client._opener so the session cookie is sent. Treats any 2xx as success
+    regardless of response body format (health endpoints may return plain text).
+    """
+    req = urllib.request.Request(client.base_url + path, method="GET")
+    try:
+        with client._opener.open(req, timeout=10) as resp:
+            resp.read()
+            return True, f"GET {path} returned OK"
+    except urllib.error.HTTPError as e:
+        e.read()
+        return False, f"GET {path} returned HTTP {e.code}"
+    except Exception as e:
+        return False, f"GET {path} connection failed: {type(e).__name__}: {e}"
 
 
 @handle_bridge_errors
@@ -48,9 +68,20 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "check_api: uncomment the Bridge implementation block. "
-            "Probe GET /health and GET /orchestrator/health-check with BridgeClient.from_env()."
+        client = BridgeClient.from_env()
+
+        gw_passed, gw_msg = _probe(client, "/health")
+        orch_passed, orch_msg = _probe(client, "/orchestrator/health-check")
+
+        result.update(
+            {
+                "success": gw_passed and orch_passed,
+                "account_id": os.environ.get("BRIDGE_USERNAME", ""),
+                "tests": {
+                    "auth_gateway_health": {"passed": gw_passed, "message": gw_msg},
+                    "orchestrator_health": {"passed": orch_passed, "message": orch_msg},
+                },
+            }
         )
 
     print(json.dumps(result, indent=2))
