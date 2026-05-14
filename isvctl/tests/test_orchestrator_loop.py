@@ -648,6 +648,35 @@ class TestStepExecutorBestEffort:
         executed = [s.name for s in results.steps]
         assert executed == ["fail_step", "ok_step"]
 
+    def test_step_best_effort_continues_and_phase_succeeds(self) -> None:
+        """Step-level best_effort=True: phase continues and succeeds despite step failure."""
+        executor = StepExecutor()
+        context = Context(RunConfig())
+        steps = [
+            StepConfig(name="skip_step", command="false", phase="setup", best_effort=True),
+            StepConfig(name="ok_step", command="echo", args=["hi"], phase="setup"),
+        ]
+
+        results = executor.execute_steps(steps, context, best_effort=False)
+
+        assert results.success, "phase must succeed when only best_effort steps fail"
+        executed = [s.name for s in results.steps]
+        assert executed == ["skip_step", "ok_step"], "subsequent step must run"
+
+    def test_step_best_effort_output_not_stored_in_context(self) -> None:
+        """Step-level best_effort=True: failed step output is NOT stored so validations SKIP."""
+        executor = StepExecutor()
+        context = Context(RunConfig())
+        steps = [
+            StepConfig(name="skip_step", command="false", phase="setup", best_effort=True),
+        ]
+
+        executor.execute_steps(steps, context, best_effort=False)
+
+        assert "skip_step" not in context.get_accumulated_context().get("steps", {}), (
+            "failed best_effort step output must not be stored in context"
+        )
+
 
 _NOISY_FAILING_SCRIPT = """#!/bin/sh
 i=0

@@ -161,6 +161,7 @@ class StepResult:
     schema_errors: list[str] = field(default_factory=list)
     validation_results: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
+    best_effort: bool = False
 
 
 @dataclass
@@ -243,6 +244,16 @@ class StepExecutor:
 
             logger.info(f"Executing step: {step.name}")
             step_result = self._execute_step(step, context)
+
+            if not step_result.success and step.best_effort:
+                # Step-level best_effort: record the step without propagating failure
+                # to the phase, and skip storing output so downstream validations
+                # SKIP (step_no_output) rather than FAIL (error output).
+                logger.warning(f"Step '{step.name}' failed (best_effort: true, continuing without storing output)")
+                step_result.best_effort = True
+                results.steps.append(step_result)
+                continue
+
             results.add_step(step_result)
 
             # Store output in context for subsequent steps

@@ -683,6 +683,7 @@ class Orchestrator:
                     {
                         "name": s.name,
                         "success": s.success,
+                        "best_effort": s.best_effort,
                         "error": s.error,
                         "output": redact_dict(s.output),
                         "schema_name": s.schema_name,
