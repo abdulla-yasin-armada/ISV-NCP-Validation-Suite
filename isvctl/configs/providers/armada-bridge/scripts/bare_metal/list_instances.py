@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """list_instances — Armada Bridge bare metal suite, test phase.
 
-Lists bare metal nodes via:
-  GET /tenants/<tenant>/metal
+Lists bare metal compute nodes via:
+  GET /orchestrator/tenants/<tenant>/metal/computes
+
+Scans the list for the node matching --instance-id.
 
 Output: {success, platform, instances, count, found_target, target_instance}
 """
@@ -14,8 +16,9 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
+from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
+from common.tenant import resolve_tenant_id
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -47,9 +50,53 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "list_instances: uncomment the Bridge implementation block. "
-            "GET /tenants/<tenant>/metal with BridgeClient.from_env()."
+        client = BridgeClient.from_env()
+        tenant = resolve_tenant_id(client, args.tenant)
+        computes = client.get(f"/orchestrator/tenants/{tenant}/metal/computes")
+
+        nodes = computes if isinstance(computes, list) else computes.get("data", [])
+        count = len(nodes)
+
+        # Bridge uses "id" or "ID" — check both
+        found = next(
+            (n for n in nodes if str(n.get("id") or n.get("ID", "")) == args.instance_id),
+            None,
+        )
+        found_target = found is not None
+
+        if not found_target:
+            result["error"] = (
+                f"Instance '{args.instance_id}' not found in list of {count} compute nodes"
+            )
+
+        def _normalize_state(node: dict) -> str:
+            alloc = str(node.get("allocateStatus", "") or "")
+            return "running" if alloc in ("done", "success") else alloc
+
+        def _vpc_of(node: dict) -> str:
+            # Discovery flow: server has subnets assigned → vpc_id is populated.
+            # Import flow: server has no subnets → returns "" → InstanceListCheck
+            # FAILS (expected; see bare_metal.yaml header for details).
+            subnets = node.get("subnets") or []
+            if subnets and subnets[0].get("parentVpcID"):
+                return str(subnets[0]["parentVpcID"])
+            return ""
+
+        result.update(
+            {
+                "success": found_target,
+                "instances": [
+                    {
+                        "instance_id": str(n.get("id") or n.get("ID", "")),
+                        "state": _normalize_state(n),
+                        "vpc_id": _vpc_of(n),
+                    }
+                    for n in nodes
+                ],
+                "count": count,
+                "found_target": found_target,
+                "target_instance": args.instance_id,
+            }
         )
 
     print(json.dumps(result, indent=2))

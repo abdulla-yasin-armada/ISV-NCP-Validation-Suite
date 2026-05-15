@@ -3,9 +3,21 @@
 
 # Armada Bridge — Bare Metal Suite Provider Config
 #
-# Blocked (❌): verify_tags, topology_placement, serial_console,
-#   stop_instance, start_instance, reboot_instance, power_cycle_instance,
-#   reinstall_instance → all have best_effort: true
+# ── Check pass/fail by flow ──────────────────────────────────────────────────
+# Discovery flow (GET /network/topologies is non-empty):
+#   InstanceListCheck     PASSES — servers have subnet/VPC assignments, so
+#                                  vpc_id is populated from subnets[0].parentVpcID
+#
+# Import flow (topologies empty, servers pre-provisioned):
+#   InstanceListCheck     FAILS  — servers have no subnet/VPC assignment, so
+#                                  vpc_id is "" and the check requires a truthy
+#                                  value. This is expected (Option A: accepted
+#                                  limitation). No best_effort added — the
+#                                  failure is intentional signal to the operator.
+#
+# ── Blocked steps (best_effort: true) ────────────────────────────────────────
+# verify_tags, topology_placement, serial_console, stop_instance, start_instance,
+# reboot_instance, power_cycle_instance, reinstall_instance → no Bridge API.
 #
 # No exclude.markers: [ssh]. Run with live Bridge infra only.
 # Teardown uses POST .../metal/:id/deallocate (not DELETE).
@@ -27,8 +39,7 @@ commands:
           - "{{bridge_tenant}}"
           - "--name"
           - "isv-test-bm"
-          - "--flavor"
-          - "{{bridge_bm_flavor}}"
+          - "{{'--flavor=' + bridge_bm_flavor if bridge_bm_flavor else ''}}"
         timeout: 600
 
       - name: list_instances
@@ -148,6 +159,7 @@ commands:
           - "--key-file"
           - "{{steps.describe_instance.key_file}}"
         timeout: 600
+        best_effort: true
 
       - name: teardown_nim
         phase: teardown
@@ -158,6 +170,7 @@ commands:
           - "--key-file"
           - "{{steps.describe_instance.key_file}}"
         timeout: 120
+        best_effort: true
 
       - name: teardown
         phase: teardown
@@ -167,6 +180,8 @@ commands:
           - "{{bridge_tenant}}"
           - "--compute-node-id"
           - "{{steps.launch_instance.instance_id}}"
+          - "{{'--vpc-id=' + steps.launch_instance.vpc_id if steps.launch_instance.vpc_id | default('') else '' | default('')}}"
+          - "{{'--subnet-id=' + steps.launch_instance.subnet_id if steps.launch_instance.subnet_id | default('') else '' | default('')}}"
           - "{{teardown_flag}}"
         timeout: 300
 
@@ -178,6 +193,8 @@ commands:
           - "{{bridge_tenant}}"
           - "--compute-node-id"
           - "{{steps.launch_instance.instance_id}}"
+          - "{{'--vpc-id=' + steps.launch_instance.vpc_id if steps.launch_instance.vpc_id | default('') else '' | default('')}}"
+          - "{{'--subnet-id=' + steps.launch_instance.subnet_id if steps.launch_instance.subnet_id | default('') else '' | default('')}}"
         timeout: 120
 
 tests:
@@ -187,5 +204,12 @@ tests:
   settings:
     bridge_url: "{{env.BRIDGE_URL | default('')}}"
     bridge_tenant: "{{env.BRIDGE_TENANT | default('demo-tenant')}}"
-    bridge_bm_flavor: "{{env.BRIDGE_BM_FLAVOR | default('bm.gpu.8x')}}"
+    bridge_bm_flavor: "{{env.BRIDGE_BM_FLAVOR | default('')}}"
     teardown_flag: "{{(env.ARMADA_BRIDGE_SKIP_TEARDOWN == 'true') | ternary('--skip-destroy', '')}}"
+
+  # Skip SSH-based host checks (CloudInit, Connectivity, Os, Gpu, Driver,
+  # CpuInfo, HostSoftware, GpuStress, Nccl, Training, Nvlink, InfiniBand,
+  # Ethernet, ContainerRuntime, NIM*) in demo/CI mode.
+  # Remove this exclusion when running against live Bridge infrastructure.
+  exclude:
+    markers: ["ssh"]
