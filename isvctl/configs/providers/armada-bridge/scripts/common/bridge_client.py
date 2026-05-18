@@ -194,7 +194,13 @@ class BridgeClient:
             raw = e.read().decode()
             _log.debug("GET %s -> %d  body=%s", url, e.code, raw)
             raise ValueError(f"GET {path} failed with status {e.code}: {raw}") from e
-        return json.loads(raw)
+        if not raw:
+            return {}
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            _log.warning("GET %s returned non-JSON response (%d bytes): %.200r", path, len(raw), raw)
+            return {}
 
     def post(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
         """POST {self.base_url}{path} with session cookie auth."""
@@ -225,11 +231,20 @@ class BridgeClient:
                 raw = resp.read().decode()
                 _log.debug("DELETE %s%s -> %d  body=%s", self.base_url, path, resp.status, raw)
         except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # Already deleted — treat as success without parsing the error body.
+                _log.debug("DELETE %s%s -> 404 (already deleted)", self.base_url, path)
+                return {}
             raw = e.read().decode()
             _log.debug("DELETE %s%s -> %d  body=%s", self.base_url, path, e.code, raw)
-            if e.code != 404:
-                raise ValueError(f"DELETE {path} failed with status {e.code}: {raw}") from e
-        return json.loads(raw) if raw else {}
+            raise ValueError(f"DELETE {path} failed with status {e.code}: {raw}") from e
+        if not raw.strip():
+            return {}
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            # DELETE succeeded but response body is not JSON (e.g. "OK", plain text).
+            return {}
 
     def patch(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
         """PATCH {self.base_url}{path} with session cookie auth."""
