@@ -94,6 +94,13 @@ class StepConfig(BaseModel):
         default_factory=list,
         description="Additional argument patterns to mask in logs (e.g., ['--my-secret'])",
     )
+    best_effort: bool = Field(
+        default=False,
+        description=(
+            "When True, a step failure does not abort the phase or mark the phase failed. "
+            "Output is not stored in context so downstream validations SKIP rather than FAIL."
+        ),
+    )
 
 
 class PlatformCommands(BaseModel):

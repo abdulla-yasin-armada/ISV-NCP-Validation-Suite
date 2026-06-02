@@ -48,6 +48,7 @@ import re
 import shlex
 import subprocess
 import sys
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -161,6 +162,7 @@ class StepResult:
     schema_errors: list[str] = field(default_factory=list)
     validation_results: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
+    best_effort: bool = False
 
 
 @dataclass
@@ -243,6 +245,16 @@ class StepExecutor:
 
             logger.info(f"Executing step: {step.name}")
             step_result = self._execute_step(step, context)
+
+            if not step_result.success and step.best_effort:
+                # Step-level best_effort: record the step without propagating failure
+                # to the phase, and skip storing output so downstream validations
+                # SKIP (step_no_output) rather than FAIL (error output).
+                logger.warning(f"Step '{step.name}' failed (best_effort: true, continuing without storing output)")
+                step_result.best_effort = True
+                results.steps.append(step_result)
+                continue
+
             results.add_step(step_result)
 
             # Store output in context for subsequent steps
@@ -326,27 +338,59 @@ class StepExecutor:
         logger.debug(f"Working directory: {cwd}")
 
         try:
-            result = subprocess.run(
+            # Stream stderr to the terminal in real-time (progress prints,
+            # polling updates, etc.) while capturing stdout for JSON parsing.
+            proc = subprocess.Popen(
                 cmd_parts,
                 cwd=cwd,
                 env=env,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=step.timeout,
             )
+
+            stderr_chunks: list[str] = []
+
+            def _stream_stderr() -> None:
+                assert proc.stderr is not None
+                for line in proc.stderr:
+                    sys.stderr.write(line)
+                    sys.stderr.flush()
+                    stderr_chunks.append(line)
+
+            stderr_thread = threading.Thread(target=_stream_stderr, daemon=True)
+            stderr_thread.start()
+
+            try:
+                stdout, _ = proc.communicate(timeout=step.timeout)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.communicate()
+                stderr_thread.join(timeout=2)
+                return StepResult(
+                    name=step.name,
+                    success=False,
+                    exit_code=-1,
+                    stdout="",
+                    stderr="".join(stderr_chunks),
+                    error=f"Command timed out after {step.timeout} seconds",
+                )
+
+            stderr_thread.join(timeout=5)
+            stderr = "".join(stderr_chunks)
 
             step_result = StepResult(
                 name=step.name,
-                success=result.returncode == 0,
-                exit_code=result.returncode,
-                stdout=result.stdout,
-                stderr=result.stderr,
+                success=proc.returncode == 0,
+                exit_code=proc.returncode,
+                stdout=stdout,
+                stderr=stderr,
             )
 
             # Always parse JSON output, even on failure - scripts output structured errors
             step_result = self._parse_output(step_result)
 
-            if result.returncode != 0:
+            if proc.returncode != 0:
                 # Use error from parsed output if available, otherwise generic message
                 if step_result.output and step_result.output.get("error"):
                     error_type = step_result.output.get("error_type", "")
@@ -356,11 +400,11 @@ class StepExecutor:
                     else:
                         step_result.error = error_msg
                 else:
-                    step_result.error = f"Command exited with code {result.returncode}"
-                    if result.stderr:
-                        step_result.error += f": {_format_stderr_excerpt(result.stderr)}"
-                if result.stderr and logger.isEnabledFor(logging.DEBUG):
-                    _write_full_stderr(step.name, result.stderr)
+                    step_result.error = f"Command exited with code {proc.returncode}"
+                    if stderr:
+                        step_result.error += f": {_format_stderr_excerpt(stderr)}"
+                if stderr and logger.isEnabledFor(logging.DEBUG):
+                    _write_full_stderr(step.name, stderr)
                 return step_result
 
             # Validate against explicit or auto-detected schema

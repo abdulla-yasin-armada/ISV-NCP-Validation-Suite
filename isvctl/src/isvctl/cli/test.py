@@ -397,7 +397,10 @@ def run(
                 # Show error if step failed
                 if not step_success:
                     error = step.get("error", "Unknown error")
-                    typer.echo(f"  [{step_name}] " + typer.style(f"ERROR: {error}", fg=typer.colors.RED))
+                    if step.get("best_effort"):
+                        typer.echo(f"  [{step_name}] " + typer.style(f"[OK~]", fg=typer.colors.YELLOW) + f" {error}")
+                    else:
+                        typer.echo(f"  [{step_name}] " + typer.style(f"ERROR: {error}", fg=typer.colors.RED))
                     # Show output if available (helpful for debugging)
                     output = step.get("output")
                     if output and verbose:
