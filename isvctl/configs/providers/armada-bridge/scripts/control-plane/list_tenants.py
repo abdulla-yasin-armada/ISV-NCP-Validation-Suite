@@ -2,7 +2,7 @@
 """list_tenants — Armada Bridge control-plane suite, test phase.
 
 Lists tenants and verifies the target tenant is present via:
-  GET /tenants
+  GET /orchestrator/tenants
 
 Output: {success, platform, found_target, target_tenant, count}
 """
@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
+from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
+from common.iam import extract_tenant_from_tenants
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -39,9 +40,23 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "list_tenants: uncomment the Bridge implementation block. "
-            "GET /tenants with BridgeClient.from_env() and search for args.tenant_name."
+        client = BridgeClient.from_env()
+        tenants = client.get("/orchestrator/tenants")
+
+        tenant_info = extract_tenant_from_tenants(tenants, args.tenant_name)
+        found = tenant_info is not None
+        count = len(tenants) if isinstance(tenants, list) else 0
+
+        if not found:
+            result["error"] = f"Tenant '{args.tenant_name}' not found in list of {count} tenants"
+
+        result.update(
+            {
+                "success": found,
+                "found_target": found,
+                "target_tenant": args.tenant_name,
+                "count": count,
+            }
         )
 
     print(json.dumps(result, indent=2))
