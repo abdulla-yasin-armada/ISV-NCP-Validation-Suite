@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
-# teardown.sh — Armada Bridge k8s suite, teardown phase.
-#
-# Bridge endpoint: DELETE /orchestrator/tenants/:tenant/clusters/:clusterID
-
+# teardown.sh — Armada Bridge Kubernetes suite teardown (wrapper).
 set -euo pipefail
-
-echo '{"success": false, "error": "Not implemented: Bridge k8s teardown requires DELETE /orchestrator/tenants/:tenant/clusters/:clusterID."}'
-exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "$SCRIPT_DIR/teardown.py" "$@"

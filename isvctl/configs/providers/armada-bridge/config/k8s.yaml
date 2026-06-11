@@ -3,14 +3,24 @@
 
 # Armada Bridge — Kubernetes Suite Provider Config
 #
-# IMPORTANT: suites/k8s.yaml hardcodes my-isv script paths in its commands
-# block. This config overrides commands: entirely with Bridge-specific paths.
+# Setup flow (import vs discovery):
+#   GET /orchestrator/network/topologies
+#     - all nonetwork (or empty) → import: BM node, no subnetIds, vpc_id n/a
+#     - ethernet (etc.)          → discovery: VPC + subnet + VM (default) or BM
+#   POST /orchestrator/tenants/:tenant/clusters → poll running → kubeconfig
 #
-# Bridge setup flow:
-#   POST /orchestrator/tenants/:tenant/clusters → cluster_id
-#   GET  /orchestrator/tenants/:tenant/clusters/:clusterID/kubeconfig → kubeconfig
+# Optional env:
+#   BRIDGE_K8S_NODE_IDS          — use these node UUID(s) for cluster create (skip allocate)
+#   BRIDGE_K8S_NODE_TYPE         — bareMetal | vm (defaults: import→BM, discovery→VM)
+#   BRIDGE_K8S_DESTROY_NODES     — teardown deallocates/deletes provisioned nodes
+#   ARMADA_BRIDGE_SKIP_TEARDOWN  — skip cluster/node destroy
+#   BRIDGE_BM_FLAVOR             — BM productTypeId override / auto-discover
+#   BRIDGE_VM_FLAVOR             — VM flavor for discovery flow (default gpu.1x)
 #
-# k8s/setup.sh and teardown.sh exit 1 (not yet implemented).
+# Usage (import lab, existing BM node from BM suite):
+#   ARMADA_BRIDGE_SKIP_TEARDOWN=true  # keep BM from BM setup if needed
+#   export BRIDGE_K8S_NODE_IDS=<allocated-bm-uuid>
+#   uv run isvctl test run -f isvctl/configs/providers/armada-bridge/config/k8s.yaml
 
 import:
   - ../../../suites/k8s.yaml
@@ -18,29 +28,50 @@ import:
 version: "1.0"
 
 commands:
-  k8s:
-    phases: ["setup", "teardown"]
+  kubernetes:
+    phases: ["setup", "test", "teardown"]
     steps:
       - name: setup
         phase: setup
-        command: "bash ../scripts/k8s/setup.sh"
+        command: "python ../scripts/k8s/setup.py"
         args:
           - "--tenant"
           - "{{bridge_tenant}}"
-        timeout: 600
+        timeout: 1800
 
       - name: teardown
         phase: teardown
-        command: "bash ../scripts/k8s/teardown.sh"
+        command: "python ../scripts/k8s/teardown.py"
         args:
           - "--tenant"
           - "{{bridge_tenant}}"
-        timeout: 300
+          - "--cluster-id"
+          - "{{steps.setup.cluster_id}}"
+          - "{{teardown_flag}}"
+        timeout: 600
 
 tests:
-  cluster_name: "armada-bridge-k8s-validation"
+  cluster_name: "{{steps.setup.cluster_name | default('armada-bridge-k8s-validation', true)}}"
   description: "Armada Bridge Kubernetes cluster validation"
+
+  validations:
+    kubernetes:
+      checks:
+        K8sNodeCountCheck:
+          count: "{{ steps.setup.kubernetes.node_count | default(1, true) }}"
+        K8sGpuPodAccessCheck:
+          total_gpu_count: "{{ steps.setup.kubernetes.gpu_node_count | default(1, true) }}"
+        K8sGpuCapacityCheck:
+          expected_per_node: "{{ steps.setup.kubernetes.gpu_per_node | default(1, true) }}"
+          expected_total: "{{ steps.setup.kubernetes.total_gpus | default(1, true) }}"
+        K8sDriverVersionCheck:
+          driver_version: "{{ steps.setup.kubernetes.driver_version | default('580.82.07', true) }}"
+        K8sNimHelmWorkload-3b:
+          gpu_count: "{{ steps.setup.kubernetes.gpu_per_node | default(1, true) }}"
+        K8sCsiTenantScopedCredentialsCheck:
+          csi_driver_namespaces: ["kube-system", "longhorn-system"]
 
   settings:
     bridge_url: "{{env.BRIDGE_URL}}"
-    bridge_tenant: "{{env.BRIDGE_TENANT}}"
+    bridge_tenant: "{{env.BRIDGE_TENANT | default('demo-tenant')}}"
+    teardown_flag: "{{(env.ARMADA_BRIDGE_SKIP_TEARDOWN == 'true') | ternary('--skip-destroy', '')}}"
