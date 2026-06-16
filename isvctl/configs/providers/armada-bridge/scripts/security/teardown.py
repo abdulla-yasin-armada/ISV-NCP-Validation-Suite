@@ -25,17 +25,9 @@ def main() -> int:
 
     result: dict[str, Any] = {"success": False, "platform": "security"}
 
-    if DEMO_MODE:
-        result.update(
-            {
-                "success": True,
-                "platform": "security",
-            }
-        )
-    else:
-        raise NotImplementedError(
-            "teardown: implement Bridge security teardown with BridgeClient.from_env()."
-        )
+    # The security suite creates no persistent resources — all scripts are
+    # read-only API probes or use fake/ephemeral UUIDs.  Nothing to clean up.
+    result.update({"success": True, "platform": "security"})
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

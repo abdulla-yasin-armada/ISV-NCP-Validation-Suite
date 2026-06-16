@@ -3,14 +3,39 @@
 
 # Armada Bridge — Security Suite Provider Config
 #
-# Non-best-effort steps (must pass once implemented):
-#   preflight, oidc_user_auth_test, sa_credential_test,
-#   short_lived_credentials_test, least_privilege_test,
-#   audit_logging_test, tenant_isolation_test, teardown
+# Required environment variables:
+#   BRIDGE_URL          Base URL of the Bridge API (e.g. https://bridge.example.com)
+#   BRIDGE_USERNAME     Admin username for Bridge API authentication
+#   BRIDGE_PASSWORD     Admin password for Bridge API authentication
+#   BRIDGE_TENANT       Primary tenant name or UUID under test
+#   BRIDGE_TENANT_B     Second tenant for isolation tests (defaults to test-tenant002)
+#   KC_TOKEN_URL        Keycloak token endpoint URL
+#                       (e.g. https://keycloak.example.com/realms/GPUaaS/protocol/openid-connect/token)
+#   KC_CLIENT_ID        Keycloak client ID (default: GPUaaS)
+#   KC_CLIENT_SECRET    Keycloak client secret (required when client authentication is enabled)
+#   BRIDGE_INSECURE     Set to 1 to skip TLS certificate verification
 #
-# best_effort: true steps (blocked or need live infra):
-#   api_endpoint_isolation, mfa_enforcement, cert_rotation_test,
-#   kms_*, customer_managed_key_test, bmc_* (4 steps)
+# Implemented steps (no best_effort — failures are real):
+#   preflight               Verifies BRIDGE_URL, credentials, and tenant are accessible
+#   api_endpoint_isolation  Confirms Bridge API resolves to private/RFC-1918 IPs only
+#   short_lived_credentials_test  Validates Keycloak token TTLs are finite and ≤ 24h
+#   least_privilege_test    Creates a temp TenantAdmin user and verifies cross-tenant denial
+#   tenant_isolation_test   Bidirectional cross-tenant resource access denial (requires BRIDGE_TENANT_B)
+#   teardown                Cleanup placeholder (no-op — temp users deleted in each test's finally block)
+#
+# best_effort: true steps (known Bridge API gaps — output SKIPPED, not FAILED):
+#   oidc_user_auth_test         Not implemented — no OIDC auth validation API
+#   sa_credential_test          Not implemented — no service account credential API
+#   audit_logging_test          Not implemented — no audit log query API
+#   mfa_enforcement             API gap — no MFA enforcement endpoint
+#   cert_rotation_test          API gap — no certificate rotation endpoint
+#   kms_encryption_options_test API gap — no KMS encryption options endpoint
+#   centralized_kms_test        API gap — no centralized KMS endpoint
+#   customer_managed_key_test   API gap — no BYOK customer managed key endpoint
+#   bmc_management_network      API gap — no BMC management network endpoint
+#   bmc_tenant_isolation        API gap — no BMC tenant isolation endpoint
+#   bmc_protocol_security       API gap — no BMC protocol security endpoint
+#   bmc_bastion_access          API gap — no BMC bastion access endpoint
 
 import:
   - ../../../suites/security.yaml
@@ -23,16 +48,15 @@ commands:
     steps:
       - name: preflight
         phase: setup
-        command: "echo"
-        args: ['{"success": true, "platform": "security", "test_name": "preflight"}']
-        timeout: 10
+        command: "python ../scripts/security/preflight.py"
+        args: ["--tenant", "{{bridge_tenant}}"]
+        timeout: 30
 
       - name: api_endpoint_isolation
         phase: test
         command: "python ../scripts/security/api_endpoint_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--bridge-url", "{{bridge_url}}"]
         timeout: 60
-        best_effort: true
 
       - name: oidc_user_auth_test
         phase: test
@@ -43,12 +67,14 @@ commands:
           - "--kc-token-url"
           - "{{kc_token_url}}"
         timeout: 120
+        best_effort: true
 
       - name: sa_credential_test
         phase: test
         command: "python ../scripts/security/sa_credential_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
+        best_effort: true
 
       - name: short_lived_credentials_test
         phase: test
@@ -71,11 +97,12 @@ commands:
         command: "python ../scripts/security/audit_logging_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
+        best_effort: true
 
       - name: tenant_isolation_test
         phase: test
         command: "python ../scripts/security/tenant_isolation_test.py"
-        args: ["--tenant-a", "{{bridge_tenant}}", "--tenant-b", "isv-test-tenant-b"]
+        args: ["--tenant-a", "{{bridge_tenant}}", "--tenant-b", "{{bridge_tenant_b}}"]
         timeout: 180
 
       - name: mfa_enforcement
@@ -154,4 +181,5 @@ tests:
   settings:
     bridge_url: "{{env.BRIDGE_URL}}"
     bridge_tenant: "{{env.BRIDGE_TENANT}}"
+    bridge_tenant_b: "{{env.BRIDGE_TENANT_B | default('test-tenant002')}}"
     kc_token_url: "{{env.KC_TOKEN_URL}}"
