@@ -3,13 +3,14 @@
 
 Flow:
   1. GET /orchestrator/network/topologies
-     - Non-empty list → discovery flow: create VPC + subnet, pass subnetIds
-     - Empty list     → import flow: allocate without subnetIds
+     - All entries networkType "nonetwork" (or empty list) → import flow
+     - Otherwise → discovery flow: create VPC + subnet, pass subnetIds
 
   2. Resolve productTypeId:
-     - If --flavor is non-empty: use it directly.
-     - Otherwise: GET /orchestrator/catalog and pick the first ProductType
-       with count > 1 (more than one unallocated server of that type).
+     - If --flavor / BRIDGE_BM_FLAVOR is set: use it (productTypeId; catalog IDs
+       are resolved to the first available product type in that catalog).
+     - Otherwise: GET /orchestrator/catalog, server catalogs only, first
+       productType with count >= 1. Optional BRIDGE_BM_GPU_TYPE name filter.
 
   3. POST /orchestrator/tenants/<tenant>/metal/allocate
      Body: {ProductTypeID, computeNodeCount} + subnetIds in discovery flow
@@ -22,8 +23,8 @@ Idempotency:
   - 409 on allocate → proceed to polling (node may already exist from prior run).
   - vpc_id/subnet_id emitted as "" in import flow so teardown skips VPC cleanup.
 
-Output: {success, platform, instance_id, state, public_ip, instance_type,
-         vpc_id, subnet_id}
+Output: {success, platform, discovery_flow, flavor_auto_discovered, product_type_id,
+         flavor_name, instance_id, state, public_ip, instance_type, vpc_id, subnet_id}
 """
 import argparse
 import json
@@ -35,7 +36,9 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
+from common.catalog import discover_bm_product_type_id
 from common.errors import handle_bridge_errors
+from common.network import is_discovery_flow, list_topologies, provision_discovery_network
 from common.polling import poll_until
 from common.tenant import resolve_tenant_id
 
@@ -44,34 +47,6 @@ DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 _POLL_TIMEOUT = 540
 _POLL_INTERVAL = 15
 _DONE_STATES = {"done", "success"}
-
-
-def _discover_flavor(client: BridgeClient) -> str:
-    """Return the first productTypeId from the catalog with count > 1.
-
-    Raises RuntimeError if the catalog is empty, has no eligible product type,
-    or all eligible product types have an empty ID.
-    """
-    catalogs = client.get("/orchestrator/catalog")
-    if not catalogs:
-        raise RuntimeError(
-            "Catalog is empty — no BM flavors available. "
-            "Set BRIDGE_BM_FLAVOR to a productTypeId explicitly."
-        )
-    catalogs = catalogs if isinstance(catalogs, list) else []
-    for catalog in catalogs:
-        for pt in catalog.get("productTypes", []):
-            try:
-                count = int(pt.get("count", 0))
-            except (TypeError, ValueError):
-                continue
-            pt_id = str(pt.get("id") or "")
-            if count > 1 and pt_id:
-                return pt_id
-    raise RuntimeError(
-        "No BM flavor with count > 1 found in catalog. "
-        "Set BRIDGE_BM_FLAVOR to a productTypeId explicitly."
-    )
 
 
 def _find_and_wait_for_node(
@@ -104,14 +79,22 @@ def _find_and_wait_for_node(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant", required=True)
-    parser.add_argument("--flavor", default="", help="productTypeId UUID; if empty, auto-discovered from catalog (first with count>1)")
+    parser.add_argument(
+        "--flavor",
+        default="",
+        help="productTypeId UUID; if empty, auto-discovered from server catalog (first with count>=1)",
+    )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
 
     result: dict[str, Any] = {
         "success": False,
         "platform": "bare_metal",
-        "vpc_id": "",
+        "discovery_flow": False,
+        "flavor_auto_discovered": False,
+        "product_type_id": "",
+        "flavor_name": "",
+        "vpc_id": "n/a",
         "subnet_id": "",
     }
 
@@ -119,11 +102,15 @@ def main() -> int:
         result.update(
             {
                 "success": True,
+                "discovery_flow": False,
+                "flavor_auto_discovered": False,
+                "product_type_id": "demo-product-type",
+                "flavor_name": "demo.bm.gpu.8x",
                 "instance_id": "demo-bm-node01",
                 "state": "running",
                 "public_ip": "203.0.114.20",
                 "instance_type": "demo.bm.gpu.8x",
-                "vpc_id": "",
+                "vpc_id": "n/a",
                 "subnet_id": "",
             }
         )
@@ -131,50 +118,35 @@ def main() -> int:
         client = BridgeClient.from_env()
         tenant = resolve_tenant_id(client, args.tenant)
         epoch = int(time.time())
-        vpc_id = ""
+        vpc_id = "n/a"
         subnet_id = ""
 
         # ── 1. Detect discovery vs import flow ────────────────────────────
-        topologies = client.get("/orchestrator/network/topologies")
-        discovery_flow = bool(topologies)
+        topologies = list_topologies(client)
+        discovery_flow = is_discovery_flow(topologies)
+        result["discovery_flow"] = discovery_flow
 
         # ── 2. Discovery flow: provision fresh VPC + subnet ───────────────
         if discovery_flow:
-            # Pick first Ethernet topology (VPC creation requires Ethernet).
-            ethernet_topo = next(
-                (t for t in topologies if t.get("networkType") == "ethernet"),
-                topologies[0],
+            vpc_id, subnet_id, _topology = provision_discovery_network(
+                client,
+                tenant,
+                epoch=epoch,
+                prefix="isv-bm",
             )
-            # topologyID in VpcDTO is the topology name string (e.g. "converged"),
-            # not the NetworkConfig UUID — matches UI payload {"topologyID": "converged"}.
-            topology_name = str(ethernet_topo.get("topology", ""))
-
-            vpc_resp = client.post(
-                f"/orchestrator/tenants/{tenant}/vpcs",
-                {
-                    "name": f"isv-bm-vpc-{epoch}",
-                    "topologyID": topology_name,
-                    "description": "",
-                    "capabilities": [],
-                },
-            )
-            vpc_id = str(vpc_resp.get("id", ""))
             result["vpc_id"] = vpc_id
-
-            subnet_resp = client.post(
-                f"/orchestrator/tenants/{tenant}/subnets",
-                {
-                    "name": f"isv-bm-subnet-{epoch}",
-                    "subnetCIDR": "10.200.0.0/24",
-                    "topology": topology_name,
-                    "parentVpcID": vpc_id,
-                },
-            )
-            subnet_id = str(subnet_resp.get("id", ""))
             result["subnet_id"] = subnet_id
 
-        # ── 3. Resolve flavor (auto-discover if not specified) ────────────
-        flavor = args.flavor or _discover_flavor(client)
+        # ── 3. Resolve flavor (explicit env/arg or auto-discover from catalog) ─
+        explicit_flavor = args.flavor or os.environ.get("BRIDGE_BM_FLAVOR", "")
+        flavor, flavor_name, auto_discovered = discover_bm_product_type_id(
+            client,
+            explicit_id=explicit_flavor,
+            gpu_type_filter=os.environ.get("BRIDGE_BM_GPU_TYPE", ""),
+        )
+        result["flavor_auto_discovered"] = auto_discovered
+        result["product_type_id"] = flavor
+        result["flavor_name"] = flavor_name
 
         # ── 4. Allocate BM node (async — response has no node ID) ─────────
         allocate_body: dict[str, Any] = {

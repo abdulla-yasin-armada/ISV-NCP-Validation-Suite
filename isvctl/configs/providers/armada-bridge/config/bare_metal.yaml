@@ -4,16 +4,12 @@
 # Armada Bridge — Bare Metal Suite Provider Config
 #
 # ── Check pass/fail by flow ──────────────────────────────────────────────────
-# Discovery flow (GET /network/topologies is non-empty):
+# Discovery flow (any topology networkType != nonetwork, e.g. ethernet):
 #   InstanceListCheck     PASSES — servers have subnet/VPC assignments, so
 #                                  vpc_id is populated from subnets[0].parentVpcID
 #
-# Import flow (topologies empty, servers pre-provisioned):
-#   InstanceListCheck     FAILS  — servers have no subnet/VPC assignment, so
-#                                  vpc_id is "" and the check requires a truthy
-#                                  value. This is expected (Option A: accepted
-#                                  limitation). No best_effort added — the
-#                                  failure is intentional signal to the operator.
+# Import flow (topologies empty OR all networkType nonetwork, CSV-import lab):
+#   InstanceListCheck     PASSES — vpc_id wiring placeholder "n/a" (no Bridge VPC).
 #
 # ── Blocked steps (best_effort: true) ────────────────────────────────────────
 # verify_tags, topology_placement, serial_console, stop_instance, start_instance,
@@ -21,6 +17,10 @@
 #
 # No exclude.markers: [ssh]. Run with live Bridge infra only.
 # Teardown uses POST .../metal/:id/deallocate (not DELETE).
+#
+# BM flavor (productTypeId, not catalogId):
+#   BRIDGE_BM_FLAVOR  — optional override; auto-discovered when unset
+#   BRIDGE_BM_GPU_TYPE — optional filter when auto-discovering (name/gpuType match)
 
 import:
   - ../../../suites/bare_metal.yaml
@@ -50,6 +50,7 @@ commands:
           - "{{bridge_tenant}}"
           - "--instance-id"
           - "{{steps.launch_instance.instance_id}}"
+          - "{{'--vpc-id=' + steps.launch_instance.vpc_id if steps.launch_instance.vpc_id | default('') else '' | default('')}}"
         timeout: 60
 
       - name: verify_tags

@@ -3,8 +3,8 @@
 
 Verifies that teardown fully completed:
   1. Server is absent from the tenant computes list (poll until gone).
-  2. If --vpc-id provided: VPC is deleted (GET returns an error).
-  3. If --subnet-id provided: subnet is deleted (GET returns an error).
+  2. If --vpc-id is a real discovery-flow VPC: verify VPC is deleted.
+  3. If --subnet-id is a real discovery-flow subnet: verify subnet is deleted.
 
 Note: FetchComputeByID returns HTTP 500 (not 404) on missing node, so
 server presence is checked via the list endpoint, not GET-by-ID.
@@ -21,6 +21,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
+from common.network import is_managed_network_id
 from common.polling import poll_until
 from common.tenant import resolve_tenant_id
 
@@ -93,27 +94,27 @@ def main() -> int:
         )
         result["server_gone"] = True
 
-        # 2. Verify VPC and subnet are deleted.
+        # 2. Discovery flow only: verify VPC/subnet are deleted.
         vpc_gone = True
         subnet_gone = True
 
-        if args.vpc_id:
+        if is_managed_network_id(args.vpc_id):
             vpc_gone = _resource_gone(
                 client, f"/orchestrator/tenants/{tenant}/vpcs/{args.vpc_id}"
             )
             if not vpc_gone:
                 result["error"] = f"VPC '{args.vpc_id}' still exists after teardown"
 
-        if args.subnet_id:
+        if is_managed_network_id(args.subnet_id):
             subnet_gone = _resource_gone(
                 client, f"/orchestrator/tenants/{tenant}/subnets/{args.subnet_id}"
             )
             if not subnet_gone and "error" not in result:
                 result["error"] = f"Subnet '{args.subnet_id}' still exists after teardown"
 
-        result["vpc_gone"] = vpc_gone
-        result["subnet_gone"] = subnet_gone
-        result["success"] = vpc_gone and subnet_gone
+        result["vpc_gone"] = vpc_gone if is_managed_network_id(args.vpc_id) else None
+        result["subnet_gone"] = subnet_gone if is_managed_network_id(args.subnet_id) else None
+        result["success"] = result["server_gone"] and vpc_gone and subnet_gone
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

