@@ -3,11 +3,42 @@
 
 # Armada Bridge — Slurm Suite Provider Config
 #
-# IMPORTANT: suites/slurm.yaml hardcodes my-isv script paths. Override here.
+# Setup flow (import vs discovery):
+#   GET /orchestrator/network/topologies
+#     - import  → bareMetal master/worker nodes (default)
+#     - discovery → VM master/worker nodes (default)
+#   POST /orchestrator/tenants/:tenant/slurm → poll running → Slurm CLI inventory
 #
-# Bridge setup flow:
-#   POST /orchestrator/tenants/:tenant/slurm → slurm_id + head node IP
-#   SSH into head node for sinfo/sbatch validation runs.
+# Node env (reuse existing nodes or auto-provision):
+#   BRIDGE_SLURM_NODE_IDS            — comma-separated UUIDs (first = master unless overridden)
+#   BRIDGE_SLURM_MASTER_NODE_ID      — explicit master UUID
+#   BRIDGE_SLURM_WORKER_NODE_IDS     — comma-separated worker UUIDs
+#   BRIDGE_SLURM_NODE_TYPE           — bareMetal | vm (defaults: import→BM, discovery→VM)
+#   BRIDGE_SLURM_WORKER_COUNT        — workers to provision when node ids omitted (default 0)
+#   BRIDGE_SLURM_SKIP_NODE_PROVISION — fail if no node ids and set
+#
+# Slurm CLI (validations run sinfo/srun/sbatch locally on the isvctl host):
+#   BRIDGE_SLURM_CLI_MODE            — auto | local | ssh (default auto)
+#   BRIDGE_SLURM_HEAD_HOST           — override head/login IP/hostname
+#   BRIDGE_SLURM_REMOTE_CONF         — remote slurm.conf path (default /etc/slurm/slurm.conf)
+#   BRIDGE_SLURM_CPU_PARTITION       — expected cpu partition name (default cpu)
+#   BRIDGE_SLURM_GPU_PARTITION       — expected gpu partition name (default gpu)
+#   BRIDGE_SLURM_CPU_PARTITION_SOURCE / BRIDGE_SLURM_GPU_PARTITION_SOURCE — remap names
+#
+# Cluster env:
+#   BRIDGE_SLURM_CLUSTER_NAME        — Slurm cluster name
+#   BRIDGE_SLURM_VERSION             — Slurm version (default 24.05.6)
+#   BRIDGE_SLURM_POLL_TIMEOUT        — create poll seconds (default 3300)
+#   BRIDGE_SLURM_DELETE_TIMEOUT      — delete poll seconds (default 1500)
+#   BRIDGE_SLURM_DESTROY_NODES       — teardown deallocates/deletes provisioned nodes
+#   ARMADA_BRIDGE_SKIP_TEARDOWN      — skip cluster/node destroy
+#   BRIDGE_BM_FLAVOR / BRIDGE_VM_FLAVOR — node flavor when provisioning
+#   BRIDGE_SSH_KEY_FILE / BRIDGE_SLURM_SSH_USER — SSH for inventory + ssh CLI mode
+#
+# Usage (import lab, existing BM node as master):
+#   export BRIDGE_SLURM_MASTER_NODE_ID=<bm-uuid>
+#   export BRIDGE_SLURM_WORKER_NODE_IDS=<worker-uuid-1>,<worker-uuid-2>
+#   uv run isvctl test run -f isvctl/configs/providers/armada-bridge/config/slurm.yaml
 
 import:
   - ../../../suites/slurm.yaml
@@ -16,28 +47,62 @@ version: "1.0"
 
 commands:
   slurm:
-    phases: ["setup", "teardown"]
+    phases: ["setup", "test", "teardown"]
     steps:
       - name: setup
         phase: setup
-        command: "bash ../scripts/slurm/setup.sh"
+        command: "python ../scripts/slurm/setup.py"
         args:
           - "--tenant"
           - "{{bridge_tenant}}"
-        timeout: 600
+        timeout: 3600
 
       - name: teardown
         phase: teardown
-        command: "bash ../scripts/slurm/teardown.sh"
+        command: "python ../scripts/slurm/teardown.py"
         args:
           - "--tenant"
           - "{{bridge_tenant}}"
-        timeout: 300
+          - "--cluster-id"
+          - "{{steps.setup.cluster_id}}"
+          - "{{teardown_flag}}"
+        timeout: 1800
 
 tests:
-  cluster_name: "armada-bridge-slurm-validation"
+  cluster_name: "{{steps.setup.cluster_name | default('armada-bridge-slurm-validation', true)}}"
   description: "Armada Bridge Slurm cluster validation"
 
+  validations:
+    slurm:
+      checks:
+        SlurmPartition-cpu:
+          expected_nodes: "{{ steps.setup.slurm.partitions.cpu.nodes | default([]) | length }}"
+          required_nodes: '{{ steps.setup.slurm.partitions.cpu.nodes | default([]) | tojson }}'
+        SlurmPartition-gpu:
+          expected_nodes: "{{ steps.setup.slurm.partitions.gpu.nodes | default([]) | length }}"
+          required_nodes: '{{ steps.setup.slurm.partitions.gpu.nodes | default([]) | tojson }}'
+        SlurmNodeJobExecution-cpu:
+          storage_path: "{{ steps.setup.slurm.storage_path | default('/tmp') }}"
+        SlurmNodeJobExecution-gpu:
+          storage_path: "{{ steps.setup.slurm.storage_path | default('/tmp') }}"
+
+    slurm_workloads:
+      checks:
+        SlurmGpuStressWorkload:
+          partition: "{{ steps.setup.slurm.default_partition | default('gpu') }}"
+          cuda_arch: "{{ steps.setup.slurm.cuda_arch | default('90') }}"
+        SlurmNcclMultiNodeWorkload:
+          partition: "{{ steps.setup.slurm.default_partition | default('gpu') }}"
+          nodes: "{{ steps.setup.slurm.partitions.gpu.nodes | default([]) | length }}"
+        SlurmSbatchWorkload-gpu:
+          variables:
+            NODES: "{{ steps.setup.slurm.partitions.gpu.nodes | default([]) | length }}"
+            GPUS_PER_NODE: "{{ steps.setup.slurm.gpu_per_node | default(1, true) }}"
+        SlurmSbatchWorkload-cpu:
+          variables:
+            NODES: "{{ steps.setup.slurm.partitions.cpu.nodes | default([]) | length }}"
+
   settings:
-    bridge_url: "{{env.BRIDGE_URL}}"
-    bridge_tenant: "{{env.BRIDGE_TENANT}}"
+    bridge_url: "{{env.BRIDGE_URL | default('')}}"
+    bridge_tenant: "{{env.BRIDGE_TENANT | default('demo-tenant')}}"
+    teardown_flag: "{{(env.ARMADA_BRIDGE_SKIP_TEARDOWN == 'true') | ternary('--skip-destroy', '')}}"
