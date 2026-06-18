@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """teardown — Armada Bridge Kubernetes suite, teardown phase.
 
-1. DELETE cluster, poll until gone
-2. Optionally deallocate BM / delete VM when setup provisioned them
-3. Discovery flow: delete subnet/VPC when real UUIDs were created
+1. Early-exit if ``--skip-destroy`` or ``ARMADA_BRIDGE_SKIP_TEARDOWN=true``.
+2. DELETE cluster, poll until gone.
+3. Optionally deallocate BM / delete VM when setup provisioned them
+   (``BRIDGE_K8S_DESTROY_NODES`` overrides; defaults to ``provisioned_nodes``
+   from state).
+4. Discovery flow: delete subnet/VPC when real UUIDs were created.
+   Import flow uses vpc_id ``n/a`` — network delete is skipped.
+5. Deallocate the Tenant B ACL probe BM + network (if ``BRIDGE_TENANT_B``
+   was set during setup and state contains ``acl_probe_node_id``).
+6. ``clear_state()`` — remove the k8s state file written by setup.
 
-Import flow uses vpc_id \"n/a\" — network delete is skipped.
-Pre-existing nodes (--node-id / BRIDGE_K8S_NODE_IDS) are kept unless
-BRIDGE_K8S_DESTROY_NODES=true.
+Pre-existing nodes (``--node-id`` / ``BRIDGE_K8S_NODE_IDS``) are kept unless
+``BRIDGE_K8S_DESTROY_NODES=true``.
 """
 from __future__ import annotations
 
@@ -24,8 +30,8 @@ from common.bridge_client import BridgeClient  # noqa: E402
 from common.cluster import delete_cluster, wait_cluster_deleted  # noqa: E402
 from common.errors import handle_bridge_errors  # noqa: E402
 from common.k8s_state import clear_state, load_state  # noqa: E402
+from common.metal import deallocate_bm  # noqa: E402
 from common.network import is_managed_network_id  # noqa: E402
-from common.polling import poll_until  # noqa: E402
 from common.tenant import resolve_tenant_id  # noqa: E402
 from common.vm import get_vm, vm_path, wait_for_vm_deleted  # noqa: E402
 
@@ -44,40 +50,8 @@ def _should_destroy_nodes(state: dict[str, Any]) -> bool:
     return bool(state.get("provisioned_nodes"))
 
 
-def _deallocate_bm(client: BridgeClient, tenant_id: str, node_id: str) -> None:
-    """Deallocate a bare-metal node and poll until it disappears from the compute list."""
-    try:
-        client.post(
-            f"/orchestrator/tenants/{tenant_id}/metal/{node_id}/deallocate",
-            {},
-        )
-    except ValueError as exc:
-        if "404" not in str(exc):
-            raise
-
-    list_path = f"/orchestrator/tenants/{tenant_id}/metal/computes"
-
-    def check_gone() -> tuple[bool, Any, str]:
-        computes = client.get(list_path)
-        nodes = computes if isinstance(computes, list) else (computes or {}).get("data", [])
-        node = next(
-            (n for n in nodes if str(n.get("id", "") or n.get("ID", "")) == node_id),
-            None,
-        )
-        if node is None:
-            return True, "absent", "server absent from list"
-        alloc_status = str(node.get("allocateStatus", "") or "")
-        return False, None, f"allocateStatus={alloc_status!r}"
-
-    poll_until(
-        check_gone,
-        label="k8s_teardown_bm",
-        interval=_BM_POLL_INTERVAL,
-        timeout=_BM_POLL_TIMEOUT,
-    )
-
-
 def _delete_vm(client: BridgeClient, tenant_id: str, vm_id: str) -> None:
+    """Delete a VM and wait for it to be gone. Idempotent — skips if already deleted (404)."""
     try:
         get_vm(client, tenant_id, vm_id)
     except ValueError as exc:
@@ -147,7 +121,12 @@ def main() -> int:
                 _delete_vm(client, tenant_id, str(node_id))
                 result["resources_deleted"].append(f"vm:{node_id}")
             else:
-                _deallocate_bm(client, tenant_id, str(node_id))
+                deallocate_bm(
+                    client, tenant_id, str(node_id),
+                    label="k8s_teardown_bm",
+                    poll_timeout=_BM_POLL_TIMEOUT,
+                    poll_interval=_BM_POLL_INTERVAL,
+                )
                 result["resources_deleted"].append(f"bare_metal:{node_id}")
 
     vpc_id = str(state.get("vpc_id") or "")
@@ -158,6 +137,30 @@ def main() -> int:
             result["resources_deleted"].append(f"subnet:{subnet_id}")
         client.delete(f"/orchestrator/tenants/{tenant_id}/vpcs/{vpc_id}")
         result["resources_deleted"].append(f"vpc:{vpc_id}")
+
+    # Deallocate the Tenant B BM provisioned by setup.py (_provision_acl_probe_bm)
+    # for the K8sApiNetworkAclCheck live probe (kept alive through the test phase).
+    acl_node_id = str(state.get("acl_probe_node_id") or "")
+    acl_tenant_b_id = str(state.get("acl_probe_tenant_b_id") or "")
+    if acl_node_id and acl_tenant_b_id:
+        deallocate_bm(
+            client, acl_tenant_b_id, acl_node_id,
+            label="acl_probe_teardown",
+            poll_timeout=_BM_POLL_TIMEOUT,
+            poll_interval=_BM_POLL_INTERVAL,
+        )
+        result["resources_deleted"].append(f"acl_probe_bm:{acl_node_id}")
+
+        acl_vpc_id = str(state.get("acl_probe_vpc_id") or "")
+        acl_subnet_id = str(state.get("acl_probe_subnet_id") or "")
+        if is_managed_network_id(acl_vpc_id):
+            if is_managed_network_id(acl_subnet_id):
+                client.delete(
+                    f"/orchestrator/tenants/{acl_tenant_b_id}/subnets/{acl_subnet_id}"
+                )
+                result["resources_deleted"].append(f"acl_probe_subnet:{acl_subnet_id}")
+            client.delete(f"/orchestrator/tenants/{acl_tenant_b_id}/vpcs/{acl_vpc_id}")
+            result["resources_deleted"].append(f"acl_probe_vpc:{acl_vpc_id}")
 
     clear_state()
     result.update({"success": True, "message": "Cluster deleted"})

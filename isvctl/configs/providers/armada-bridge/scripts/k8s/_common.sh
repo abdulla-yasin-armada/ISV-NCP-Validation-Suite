@@ -11,7 +11,7 @@
 
 # Shared K8s Inventory Logic
 #
-# Sourced by provider-specific setup.sh scripts. Expects the caller to set:
+# Called by setup.py via subprocess. Expects the caller to set (via env):
 #   KUBECTL           - kubectl command (e.g. "kubectl", "microk8s kubectl", "k3s kubectl")
 #   CLUSTER_NAME      - cluster identifier
 #   DEFAULT_GPU_NS    - fallback GPU operator namespace (default: nvidia-gpu-operator)
@@ -47,7 +47,11 @@ fi
 
 # --- GPU info ---
 GPU_NODE_COUNT=$($KUBECTL get nodes -l nvidia.com/gpu.present=true -o name 2>/dev/null | wc -l || echo "0")
-GPU_PER_NODE=$($KUBECTL get nodes -l nvidia.com/gpu.present=true -o jsonpath='{.items[0].status.capacity.nvidia\.com/gpu}' 2>/dev/null || echo "0")
+
+# GPU_PER_NODE: read from the first GPU node (used as a representative value;
+# may differ across nodes in heterogeneous clusters).
+GPU_PER_NODE=$($KUBECTL get nodes -l nvidia.com/gpu.present=true \
+    -o jsonpath='{.items[0].status.capacity.nvidia\.com/gpu}' 2>/dev/null || echo "0")
 if [ -z "$GPU_PER_NODE" ] || [ "$GPU_PER_NODE" = "null" ]; then
     if [ "$USE_NVIDIA_SMI_FALLBACK" = "true" ] && command -v nvidia-smi &> /dev/null; then
         GPU_PER_NODE=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | wc -l || echo "0")
@@ -56,12 +60,28 @@ if [ -z "$GPU_PER_NODE" ] || [ "$GPU_PER_NODE" = "null" ]; then
     fi
 fi
 
-TOTAL_GPUS=$((GPU_NODE_COUNT * GPU_PER_NODE))
+# TOTAL_GPUS: sum across all GPU nodes to handle heterogeneous clusters
+# (avoids GPU_NODE_COUNT * GPU_PER_NODE which is wrong when nodes differ).
+TOTAL_GPUS=$($KUBECTL get nodes -l nvidia.com/gpu.present=true \
+    -o jsonpath='{range .items[*]}{.status.capacity.nvidia\.com/gpu}{"\n"}{end}' 2>/dev/null \
+    | awk '{s+=$1} END {print s+0}')
+if [ -z "$TOTAL_GPUS" ] || [ "$TOTAL_GPUS" = "0" ]; then
+    TOTAL_GPUS=$((GPU_NODE_COUNT * GPU_PER_NODE))
+fi
 
 # --- Driver version from node labels ---
-DRIVER_MAJOR=$($KUBECTL get nodes -l nvidia.com/gpu.present=true -o jsonpath='{.items[0].metadata.labels.nvidia\.com/cuda\.driver\.major}' 2>/dev/null || echo "")
-DRIVER_MINOR=$($KUBECTL get nodes -l nvidia.com/gpu.present=true -o jsonpath='{.items[0].metadata.labels.nvidia\.com/cuda\.driver\.minor}' 2>/dev/null || echo "")
-DRIVER_REV=$($KUBECTL get nodes -l nvidia.com/gpu.present=true -o jsonpath='{.items[0].metadata.labels.nvidia\.com/cuda\.driver\.rev}' 2>/dev/null || echo "")
+# Iterate all GPU nodes and take the first non-empty value so the result is
+# stable regardless of node count or ordering.  Label keys contain '/' which
+# requires bracket notation in jsonpath to avoid mis-parsing.
+DRIVER_MAJOR=$($KUBECTL get nodes -l nvidia.com/gpu.present=true \
+    -o jsonpath="{range .items[*]}{.metadata.labels['nvidia\.com/cuda\.driver\.major']}{'\n'}{end}" \
+    2>/dev/null | grep -v '^$' | head -1 || echo "")
+DRIVER_MINOR=$($KUBECTL get nodes -l nvidia.com/gpu.present=true \
+    -o jsonpath="{range .items[*]}{.metadata.labels['nvidia\.com/cuda\.driver\.minor']}{'\n'}{end}" \
+    2>/dev/null | grep -v '^$' | head -1 || echo "")
+DRIVER_REV=$($KUBECTL get nodes -l nvidia.com/gpu.present=true \
+    -o jsonpath="{range .items[*]}{.metadata.labels['nvidia\.com/cuda\.driver\.rev']}{'\n'}{end}" \
+    2>/dev/null | grep -v '^$' | head -1 || echo "")
 
 if [ -n "$DRIVER_MAJOR" ] && [ -n "$DRIVER_MINOR" ] && [ -n "$DRIVER_REV" ]; then
     DRIVER_VERSION="${DRIVER_MAJOR}.${DRIVER_MINOR}.${DRIVER_REV}"

@@ -39,13 +39,17 @@ spec:
                     -mca plm_rsh_args "-o StrictHostKeyChecking=no -o IdentityFile=/tmp/id_rsa" \
                     -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH \
                     /usr/local/bin/all_reduce_perf_mpi -b 8 -e 4G -f 2 -g 1
-          affinity:
-            nodeAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                nodeSelectorTerms:
-                  - matchExpressions:
-                      - key: node-role.kubernetes.io/control-plane
-                        operator: Exists
+          # Bridge/Kamaji: control-plane runs in the management cluster and is not
+          # visible to the tenant kubeconfig — no worker node has the control-plane
+          # role label, so this affinity would leave the Launcher pod Pending forever.
+          # Commented out to allow the Launcher to schedule on any available worker node.
+          # affinity:
+          #   nodeAffinity:
+          #     requiredDuringSchedulingIgnoredDuringExecution:
+          #       nodeSelectorTerms:
+          #         - matchExpressions:
+          #             - key: node-role.kubernetes.io/control-plane
+          #               operator: Exists
     Worker:
       replicas: 2
       template:

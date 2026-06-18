@@ -16,15 +16,16 @@ to a log file, keeping stdout clean for JSON.
 
 Usage::
 
-    from common.logging import get_file_logger
+    from common.file_logger import get_file_logger
 
-    log = get_file_logger(__name__, log_file="/tmp/armada-bridge.log")
+    log = get_file_logger(__name__)
     log.info("Starting network setup")
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -34,6 +35,18 @@ _DEFAULT_FORMAT = "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s"
 _DEFAULT_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 _DEFAULT_MAX_BYTES = 10 * 1024 * 1024  # 10 MiB
 _DEFAULT_BACKUP_COUNT = 3
+
+
+def _default_log_file() -> Path:
+    """Return the default log path for the current effective user.
+
+    ``deploy run`` executes tests via ``sudo -E``, so root and the login user
+    must not share a single ``/tmp`` file.  Override with ``ARMADA_BRIDGE_LOG_FILE``.
+    """
+    if custom := os.environ.get("ARMADA_BRIDGE_LOG_FILE"):
+        return Path(custom)
+    cache_root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    return cache_root / "isvctl" / f"armada-bridge-{os.geteuid()}.log"
 
 
 class FileLogger:
@@ -141,7 +154,7 @@ class FileLogger:
 
 def get_file_logger(
     name: str,
-    log_file: str | Path = "/tmp/armada-bridge.log",
+    log_file: str | Path | None = None,
     level: int = logging.DEBUG,
     also_stderr: bool = False,
 ) -> FileLogger:
@@ -155,11 +168,15 @@ def get_file_logger(
 
     Args:
         name: Logger name — pass ``__name__``.
-        log_file: Destination path.  Defaults to ``/tmp/armada-bridge.log``.
+        log_file: Destination path.  Defaults to a per-UID file under
+            ``$XDG_CACHE_HOME/isvctl/`` (override with ``ARMADA_BRIDGE_LOG_FILE``).
         level: Minimum log level.  Defaults to ``logging.DEBUG``.
         also_stderr: Mirror WARNING+ to stderr.  Useful during local dev.
 
     Returns:
         A configured :class:`FileLogger` instance.
     """
-    return FileLogger(name=name, log_file=log_file, level=level, also_stderr=also_stderr)
+    resolved_log_file = _default_log_file() if log_file is None else Path(log_file)
+    return FileLogger(
+        name=name, log_file=resolved_log_file, level=level, also_stderr=also_stderr
+    )
