@@ -18,6 +18,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
 from common.errors import handle_bridge_errors
+from common.network import api_gap_result
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -45,10 +46,7 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "Bridge API gap: no BYOIP/custom external IP endpoint. "
-            "See bridge-isv-ncp-status.md Network suite byoip_test."
-        )
+        result = api_gap_result('byoip_test', 'BYOIP API not available on Bridge')
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

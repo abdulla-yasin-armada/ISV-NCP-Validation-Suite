@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """vpc_ip_config_test — Armada Bridge network suite, test phase.
 
-Validates VPC-level IP configuration.
-
-VpcIpConfigCheck reads: cidr, subnets (with auto_assign_public_ip + available_ips),
-dhcp_options (with domain_name_servers).
+Reads VPC/subnet IP configuration from orchestrator API (discovery) or
+IPAllocation CRs (import) and emits JSON for VpcIpConfigCheck.
 
 Output: {success, platform, cidr, subnets, dhcp_options}
 """
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -16,8 +16,10 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
+from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
+from common.network import load_network_by_vpc_id
+from common.tenant import resolve_tenant_id
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -27,7 +29,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant", required=True)
     parser.add_argument("--vpc-id", required=True)
-    parser.parse_args()
+    args = parser.parse_args()
 
     result: dict[str, Any] = {"success": False, "platform": "network"}
 
@@ -62,9 +64,20 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "vpc_ip_config_test: uncomment the Bridge implementation block. "
-            "Use BridgeClient.from_env() to validate VPC IP configuration."
+        client = BridgeClient.from_env()
+        tenant_id = resolve_tenant_id(client, args.tenant)
+        profile = load_network_by_vpc_id(client, tenant_id, args.tenant, args.vpc_id)
+        result.update(
+            {
+                "success": True,
+                "platform": "network",
+                "network_id": profile["network_id"],
+                "cidr": profile["cidr"],
+                "subnets": profile["subnets"],
+                "dhcp_options": profile["dhcp_options"],
+                "import_flow": profile.get("import_flow", False),
+                "discovery_flow": profile.get("discovery_flow", False),
+            }
         )
 
     print(json.dumps(result, indent=2))

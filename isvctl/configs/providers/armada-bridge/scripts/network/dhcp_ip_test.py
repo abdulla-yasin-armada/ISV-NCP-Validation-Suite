@@ -15,6 +15,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
 from common.errors import handle_bridge_errors
+from common.network import api_gap_result
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -39,10 +40,7 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "dhcp_ip_test: uncomment the Bridge implementation block. "
-            "Use BridgeClient.from_env() to validate DHCP lease issuance."
-        )
+        result = api_gap_result('dhcp_ip_test', 'DHCP/IP management requires SSH into a live instance')
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

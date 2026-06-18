@@ -3,9 +3,24 @@
 
 # Armada Bridge — Network Suite Provider Config
 #
-# ALL steps have best_effort: true — both ❌ unimplemented APIs and ⚠️ steps
-# that need live VMs/traffic probes. This lets the suite run to completion
-# and report which steps pass vs. fail.
+# ALL steps have best_effort: true so the suite always runs to completion
+# and reports which steps pass vs. fail.
+#
+# Step readiness:
+#   ✅ API-only (run from anywhere): create_network, provision_nodes, subnet_config,
+#      vpc_ip_config, backend_switch_fabric, deprovision_nodes, teardown
+#   ⚠️  Requires BM nodes + SSH from inside Bridge network: connectivity_test,
+#      traffic_validation, stable_ip_test
+#
+# Environment variables:
+#   BRIDGE_URL, BRIDGE_USERNAME, BRIDGE_PASSWORD, BRIDGE_INSECURE=1  — required
+#   BRIDGE_TENANT                   — target tenant slug
+#   BRIDGE_BM_SSH_PASS              — SSH password for BM nodes (traffic/stable_ip)
+#   BRIDGE_BM_SSH_USER              — SSH username (default: ubuntu)
+#   BRIDGE_BM_FLAVOR                — BM productTypeId (auto-discovered if unset)
+#   BRIDGE_BM_GPU_TYPE              — GPU type filter for auto-discovery
+#   BRIDGE_NETWORK_NODE_IDS         — reuse existing node IDs, skip provisioning
+#   ARMADA_BRIDGE_SKIP_TEARDOWN     — set to 'true' to skip teardown
 
 import:
   - ../../../suites/network.yaml
@@ -21,28 +36,41 @@ commands:
         command: "python ../scripts/network/create_vpc.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
-        best_effort: true
+
+      - name: provision_nodes
+        phase: setup
+        command: "python ../scripts/network/provision_nodes.py"
+        args:
+          - "--tenant"
+          - "{{bridge_tenant}}"
+          - "--count"
+          - "2"
+          - "--vpc-id"
+          - "{{steps.create_network.vpc_id}}"
+          - "--subnet-id"
+          - "{{steps.create_network.subnet_id}}"
+          - "--converged-subnet-id"
+          - "{{steps.create_network.converged_subnet_id}}"
+        timeout: 600
 
       - name: vpc_crud
         phase: test
         command: "python ../scripts/network/vpc_crud_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--vpc-id", "{{steps.create_network.vpc_id}}"]
         timeout: 120
-        best_effort: true
+        best_effort: true  # API gap: Bridge VPC tag/DNS mutation not supported
 
       - name: subnet_config
         phase: test
         command: "python ../scripts/network/subnet_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--vpc-id", "{{steps.create_network.vpc_id}}"]
         timeout: 120
-        best_effort: true
 
       - name: vpc_isolation
         phase: test
         command: "python ../scripts/network/isolation_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
-        best_effort: true
 
       - name: sg_crud
         phase: test
@@ -60,28 +88,39 @@ commands:
           - "--security-group-id"
           - "{{steps.create_network.security_group_id}}"
         timeout: 120
-        best_effort: true
+        best_effort: true  # API gap: requires live VM traffic paths
 
       - name: connectivity_test
         phase: test
         command: "python ../scripts/network/test_connectivity.py"
-        args: ["--tenant", "{{bridge_tenant}}", "--vpc-id", "{{steps.create_network.vpc_id}}"]
+        args:
+          - "--tenant"
+          - "{{bridge_tenant}}"
+          - "--vpc-id"
+          - "{{steps.create_network.vpc_id}}"
+          - "--instance-ids"
+          - "{{steps.provision_nodes.instance_ids_csv}}"
         timeout: 300
-        best_effort: true
 
       - name: traffic_validation
         phase: test
         command: "python ../scripts/network/traffic_test.py"
-        args: ["--tenant", "{{bridge_tenant}}", "--vpc-id", "{{steps.create_network.vpc_id}}"]
-        timeout: 300
-        best_effort: true
+        args:
+          - "--tenant"
+          - "{{bridge_tenant}}"
+          - "--vpc-id"
+          - "{{steps.create_network.vpc_id}}"
+          - "--instance-ids"
+          - "{{steps.provision_nodes.instance_ids_csv}}"
+          - "--ssh-user"
+          - "{{env.BRIDGE_BM_SSH_USER | default('ubuntu')}}"
+        timeout: 3600
 
       - name: vpc_ip_config
         phase: test
         command: "python ../scripts/network/vpc_ip_config_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--vpc-id", "{{steps.create_network.vpc_id}}"]
         timeout: 60
-        best_effort: true
 
       - name: dhcp_ip_test
         phase: test
@@ -89,7 +128,7 @@ commands:
         command: "python ../scripts/network/dhcp_ip_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--subnet-id", "{{steps.create_network.subnet_id}}"]
         timeout: 300
-        best_effort: true
+        best_effort: true  # API gap: requires SSH into live instance
 
       - name: sg_workload_scoping
         phase: test
@@ -100,7 +139,7 @@ commands:
           - "--scope-type"
           - "workload"
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SG scoping not exposed on Bridge orchestrator
 
       - name: sg_node_scoping
         phase: test
@@ -111,7 +150,7 @@ commands:
           - "--scope-type"
           - "node"
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SG scoping not exposed on Bridge orchestrator
 
       - name: sg_subnet_scoping
         phase: test
@@ -122,7 +161,7 @@ commands:
           - "--scope-type"
           - "subnet"
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SG scoping not exposed on Bridge orchestrator
 
       - name: sg_service_scoping
         phase: test
@@ -133,77 +172,94 @@ commands:
           - "--scope-type"
           - "service"
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SG scoping not exposed on Bridge orchestrator
 
       - name: stable_ip_test
         phase: test
         command: "python ../scripts/network/stable_ip_test.py"
-        args: ["--tenant", "{{bridge_tenant}}", "--vpc-id", "{{steps.create_network.vpc_id}}"]
-        timeout: 300
-        best_effort: true
+        args:
+          - "--tenant"
+          - "{{bridge_tenant}}"
+          - "--vpc-id"
+          - "{{steps.create_network.vpc_id}}"
+          - "--instance-ids"
+          - "{{steps.provision_nodes.instance_ids_csv}}"
+          - "--ssh-user"
+          - "{{env.BRIDGE_BM_SSH_USER | default('ubuntu')}}"
+        timeout: 900
 
       - name: floating_ip_test
         phase: test
         command: "python ../scripts/network/floating_ip_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
-        best_effort: true
+        best_effort: true  # API gap: floating IP not available on Bridge
 
       - name: dns_test
         phase: test
         command: "python ../scripts/network/dns_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
-        best_effort: true
+        best_effort: true  # API gap: localized DNS not available on Bridge
 
       - name: peering_test
         phase: test
         command: "python ../scripts/network/peering_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
-        best_effort: true
+        best_effort: true  # API gap: VPC peering not available on Bridge
 
       - name: sdn_hardware_fault_logging
         phase: test
         command: "python ../scripts/network/sdn_logging_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--log-type", "fault"]
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SDN logging not exposed on Bridge
 
       - name: sdn_latency_perf_logging
         phase: test
         command: "python ../scripts/network/sdn_logging_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--log-type", "perf"]
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SDN logging not exposed on Bridge
 
       - name: sdn_filter_audit_trail
         phase: test
         command: "python ../scripts/network/sdn_logging_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--log-type", "audit"]
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: SDN logging not exposed on Bridge
 
       - name: backend_switch_fabric
         phase: test
         command: "python ../scripts/network/backend_switch_fabric_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 60
-        best_effort: true
 
       - name: nvlink_domain
         phase: test
         command: "python ../scripts/network/nvlink_domain_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 60
-        best_effort: true
+        best_effort: true  # API gap: no NVLink domain metadata endpoint
 
       - name: byoip_test
         phase: test
         command: "python ../scripts/network/byoip_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 120
-        best_effort: true
+        best_effort: true  # API gap: BYOIP not available on Bridge
+
+      - name: deprovision_nodes
+        phase: teardown
+        command: "python ../scripts/network/deprovision_nodes.py"
+        args:
+          - "--tenant"
+          - "{{bridge_tenant}}"
+          - "--instance-ids"
+          - "{{steps.provision_nodes.instance_ids_csv}}"
+          - "{{teardown_flag}}"
+        timeout: 360
 
       - name: teardown
         phase: teardown
@@ -213,16 +269,32 @@ commands:
           - "{{bridge_tenant}}"
           - "--vpc-id"
           - "{{steps.create_network.vpc_id}}"
+          - "--converged-vpc-id"
+          - "{{steps.create_network.converged_vpc_id}}"
+          - "{{teardown_flag}}"
         timeout: 120
-        best_effort: true
 
 tests:
   cluster_name: "armada-bridge-network-validation"
   description: "Armada Bridge network lifecycle validation"
 
+  validations:
+    setup_checks:
+      checks:
+        NetworkProvisionedCheck:
+          require_subnets: false
+    network:
+      checks:
+        SubnetConfigCheck:
+          min_subnets: 1
+          require_multi_az: false
+        VpcIpConfigCheck:
+          auto_assign_ip_mode: disabled
+
   settings:
     bridge_url: "{{env.BRIDGE_URL | default('')}}"
     bridge_tenant: "{{env.BRIDGE_TENANT | default('demo-tenant')}}"
+    teardown_flag: "{{(env.ARMADA_BRIDGE_SKIP_TEARDOWN == 'true') | ternary('--skip-destroy', '')}}"
 
   exclude:
     # DhcpIpManagementCheck requires SSH into a live instance — skip in demo mode.

@@ -19,6 +19,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
 from common.errors import handle_bridge_errors
+from common.network import api_gap_result
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -50,10 +51,7 @@ def main() -> int:
             }
         )
     else:
-        raise NotImplementedError(
-            "sg_crud_test: uncomment the Bridge implementation block. "
-            "Use BridgeClient.from_env() to test security group CRUD operations."
-        )
+        result = api_gap_result('sg_crud_test', 'Security group rule mutation API is limited on Bridge (no PUT /security-groups/:id)')
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

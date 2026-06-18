@@ -30,6 +30,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient  # noqa: F401 — used in the live impl block
 from common.errors import handle_bridge_errors
+from common.network import api_gap_result
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -84,10 +85,7 @@ def main() -> int:
         result.update({"success": True, "platform": "network"})
         result.update(_DEMO_BY_LOG_TYPE[args.log_type])
     else:
-        raise NotImplementedError(
-            "sdn_logging_test: uncomment the Bridge implementation block. "
-            "Use BridgeClient.from_env() to validate SDN log queryability."
-        )
+        result = api_gap_result('sdn_logging_test', 'SDN logging API not exposed on Bridge orchestrator')
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1
