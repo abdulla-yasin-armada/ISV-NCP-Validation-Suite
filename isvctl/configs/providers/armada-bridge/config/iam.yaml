@@ -4,13 +4,13 @@
 # Armada Bridge — IAM Suite Provider Config
 #
 # Imports the provider-agnostic iam.yaml validations and wires Bridge-specific
-# scripts. All scripts raise NotImplementedError in non-demo mode.
+# scripts that make live Bridge API calls (create/test/delete IAM credentials).
 #
 # Usage (demo):
 #   ISVCTL_DEMO_MODE=1 uv run isvctl test run -f isvctl/configs/providers/armada-bridge/config/iam.yaml
 #
 # Usage (live — requires BRIDGE_URL, BRIDGE_USERNAME, BRIDGE_PASSWORD,
-#               BRIDGE_TENANT, KC_TOKEN_URL, KC_CLIENT_ID, KC_CLIENT_SECRET):
+#               BRIDGE_TENANT; optional BRIDGE_INSECURE=1, BRIDGE_TOTP_SECRET):
 #   uv run isvctl test run -f isvctl/configs/providers/armada-bridge/config/iam.yaml
 
 import:

@@ -15,6 +15,9 @@ Proves the API key from create_user is valid via the auth-gateway only:
   Note: x-api-key header auth is a feature gap in the current auth-gateway
   build (ApiKeyAuthMiddleware is defined but never registered).
 
+  BRIDGE_HOST: when set, added as the HTTP Host header on every request so the
+  ingress routes correctly when BRIDGE_URL is an internal IP:port address.
+
 Output: {success, authenticated, account_id, identity_id, platform: "iam"}
 """
 import argparse
@@ -55,6 +58,7 @@ def main() -> int:
         )
     else:
         bridge_url = os.environ["BRIDGE_URL"].rstrip("/")
+        host_header = os.environ.get("BRIDGE_HOST", "").strip() or None
 
         ssl_context: ssl.SSLContext | None = None
         if os.environ.get("BRIDGE_INSECURE") == "1":
@@ -77,6 +81,8 @@ def main() -> int:
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
+            if host_header:
+                login_req.add_header("Host", host_header)
             with opener.open(login_req, timeout=30) as resp:
                 resp.read()
         except urllib.error.HTTPError as e:
@@ -96,6 +102,8 @@ def main() -> int:
                 f"{bridge_url}/key-manager/api-key",
                 method="GET",
             )
+            if host_header:
+                get_req.add_header("Host", host_header)
             with opener.open(get_req, timeout=30) as resp:
                 stored_key = resp.read().decode().strip()
         except urllib.error.HTTPError as e:

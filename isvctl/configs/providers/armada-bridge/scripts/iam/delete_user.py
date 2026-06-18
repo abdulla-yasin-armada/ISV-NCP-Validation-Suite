@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
 from common.constants import TEST_PASSWORD
-from common.iam import extract_user_from_users
+from common.iam import expect_json_list, extract_user_from_users
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -55,7 +55,7 @@ def main() -> int:
 
         # Step 1: Verify user still exists (idempotency guard)
         try:
-            users = admin_client.get("/users")
+            users = expect_json_list(admin_client.get("/users"), "GET /users")
             user_info = extract_user_from_users(users, user_email)
         except Exception as e:
             result.update({"error": f"Failed to list users: {e}"})
