@@ -10,12 +10,13 @@
 
 """Tests for the archive module."""
 
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from isvctl.remote.archive import ArchiveError, TarArchive
+from isvctl.remote.archive import ArchiveError, TarArchive, remote_extract_command
 
 
 class TestTarArchive:
@@ -191,3 +192,32 @@ class TestTarArchive:
         call_kwargs = mock_run.call_args[1]
         assert "env" in call_kwargs
         assert call_kwargs["env"].get("COPYFILE_DISABLE") == "1"
+
+    @patch("subprocess.run")
+    @patch.object(sys, "platform", "darwin")
+    def test_create_omits_macos_xattrs_on_darwin(
+        self, mock_run: MagicMock, tmp_path: Path
+    ) -> None:
+        """Test that macOS tar omits extended attributes from deploy archives."""
+        test_dir = tmp_path / "project"
+        test_dir.mkdir()
+        (test_dir / "file.txt").write_text("content")
+
+        output = tmp_path / "archive.tar.gz"
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        output.write_bytes(b"fake tar content")
+
+        archive = TarArchive(working_dir=tmp_path)
+        archive.create(output=output, paths=["project"])
+
+        call_args = mock_run.call_args[0][0]
+        assert "--no-xattrs" in call_args
+        assert "--no-mac-metadata" in call_args
+
+
+class TestRemoteExtractCommand:
+    def test_suppresses_unknown_keyword_warnings(self) -> None:
+        cmd = remote_extract_command("isv-ncp-validation-suite.tar.gz")
+        assert "isv-ncp-validation-suite.tar.gz" in cmd
+        assert "--warning=no-unknown-keyword" in cmd
+        assert "Ignoring unknown extended header keyword" in cmd

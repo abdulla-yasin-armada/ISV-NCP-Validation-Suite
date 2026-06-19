@@ -16,6 +16,7 @@ This module provides utilities for creating tar archives for deployment.
 import logging
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,24 @@ DEFAULT_EXCLUDES: list[str] = [
 
 class ArchiveError(Exception):
     """Exception raised when archive creation fails."""
+
+
+def _darwin_tar_create_flags() -> list[str]:
+    """Flags for macOS bsdtar to omit extended attributes Linux tar cannot apply."""
+    if sys.platform != "darwin":
+        return []
+    return ["--no-xattrs", "--no-mac-metadata"]
+
+
+def remote_extract_command(archive_name: str) -> str:
+    """Shell command to extract a deploy archive on Linux without macOS xattr noise."""
+    return (
+        f'if tar --warning=no-unknown-keyword -xzf "{archive_name}" 2>/dev/null; then\n'
+        f"  :\n"
+        f"else\n"
+        f'  tar -xzf "{archive_name}" 2> >(grep -v "Ignoring unknown extended header keyword" >&2)\n'
+        f"fi"
+    )
 
 
 class TarArchive:
@@ -89,7 +108,7 @@ class TarArchive:
                 raise ArchiveError(f"Path not found: {path}")
 
         # Build tar command
-        cmd = ["tar"]
+        cmd = ["tar", *_darwin_tar_create_flags()]
 
         # Add compression flag
         if compress:
