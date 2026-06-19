@@ -20,6 +20,11 @@
       "root": "isvreporter",
       "pythonVersion": "3.12",
       "extraPaths": ["isvreporter/src"]
+    },
+    {
+      "root": "isvctl/configs/providers/armada-bridge/scripts",
+      "pythonVersion": "3.12",
+      "extraPaths": ["isvctl/configs/providers/armada-bridge/scripts"]
     }
   ]
 }

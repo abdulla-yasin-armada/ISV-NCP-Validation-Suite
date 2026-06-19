@@ -14,7 +14,7 @@ This module provides SSH, SCP, and archive utilities for remote deployment
 and test execution.
 """
 
-from isvctl.remote.archive import TarArchive
+from isvctl.remote.archive import TarArchive, remote_extract_command
 from isvctl.remote.ssh import SSHClient, SSHResult
 from isvctl.remote.transfer import SCPTransfer
 
@@ -23,4 +23,5 @@ __all__ = [
     "SSHClient",
     "SSHResult",
     "TarArchive",
+    "remote_extract_command",
 ]
