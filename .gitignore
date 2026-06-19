@@ -31,3 +31,12 @@ isv-ncp-validation-suite*.tar.gz
 
 # Trivy local / CI artifact (default output name)
 *.sarif
+
+# IDE settings (local only)
+.vscode/
+*.code-workspace
+.cursor/rules/approve-before-change.mdc
+isvctl/configs/providers/armada-bridge/scripts/pyrightconfig.json
+
+# Local test run results
+run-results/
