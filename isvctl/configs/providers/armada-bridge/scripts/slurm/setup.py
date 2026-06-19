@@ -246,6 +246,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if DEMO_MODE:
+        print("[slurm] DEMO_MODE: skipping API calls", file=sys.stderr)
         result = {
             "success": True,
             "platform": "slurm",
@@ -271,6 +272,7 @@ def main() -> int:
 
     client = BridgeClient.from_env()
     tenant_id = resolve_tenant_id(client, args.tenant)
+    print(f"[slurm] setting up Slurm cluster for tenant {tenant_id}", file=sys.stderr)
     nodes_info = _provision_slurm_nodes(
         client,
         tenant_id,

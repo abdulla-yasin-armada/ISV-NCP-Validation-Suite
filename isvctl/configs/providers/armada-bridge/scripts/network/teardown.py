@@ -42,10 +42,17 @@ def main() -> int:
     result: dict[str, Any] = {"success": False, "platform": "network"}
 
     if args.skip_destroy:
+        print("[network] teardown skipped (--skip-destroy)", file=sys.stderr)
         result.update({"success": True, "skipped": True})
     elif DEMO_MODE:
+        print("[network] DEMO_MODE: skipping API calls", file=sys.stderr)
         result["success"] = True
     elif not is_orchestrator_resource_id(args.vpc_id):
+        print(
+            f"[network] vpc_id={args.vpc_id!r} is not an orchestrator UUID — "
+            "import flow, VPCs not managed by this suite, skipping",
+            file=sys.stderr,
+        )
         result.update(
             {
                 "success": True,
@@ -56,8 +63,14 @@ def main() -> int:
     else:
         client = BridgeClient.from_env()
         tenant_id = resolve_tenant_id(client, args.tenant)
+        print(
+            f"[network] tearing down VPCs: compute={args.vpc_id}, "
+            f"converged={args.converged_vpc_id or 'n/a'}, tenant={tenant_id}",
+            file=sys.stderr,
+        )
         deprovision_discovery_vpcs(client, tenant_id, args.vpc_id, args.converged_vpc_id)
         result["success"] = True
+        print("[network] network teardown complete", file=sys.stderr)
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

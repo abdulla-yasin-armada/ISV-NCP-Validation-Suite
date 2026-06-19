@@ -118,6 +118,7 @@ def main() -> int:
         return 0
 
     if DEMO_MODE:
+        print("[network] DEMO_MODE: skipping API calls", file=sys.stderr)
         result.update({
             "success": True,
             "instance_ids": ["demo-node-0001", "demo-node-0002"],
@@ -132,6 +133,7 @@ def main() -> int:
     else:
         client = BridgeClient.from_env()
         tenant = resolve_tenant_id(client, args.tenant)
+        print(f"[network] provisioning {args.count} BM node(s) for tenant {tenant}", file=sys.stderr)
 
         existing_nodes = list_computes(client, tenant)
         existing_ids = {compute_node_id(n) for n in existing_nodes}
@@ -146,6 +148,11 @@ def main() -> int:
 
         topologies = list_topologies(client)
         import_flow = is_import_flow(topologies)
+        print(
+            f"[network] productTypeId={product_type_id} ({flavor_name}), "
+            f"flow={'import' if import_flow else 'discovery'}",
+            file=sys.stderr,
+        )
 
         # Both compute and converged subnet IDs are required by the Bridge BM allocate API
         # in discovery flow. Import flow passes no subnet IDs.

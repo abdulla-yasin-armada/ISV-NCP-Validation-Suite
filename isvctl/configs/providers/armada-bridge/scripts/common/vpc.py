@@ -20,6 +20,7 @@ Bridge API ("none of the provided subnets is for converged or storage topology")
 """
 from __future__ import annotations
 
+import sys
 import time
 from typing import Any
 
@@ -59,6 +60,7 @@ def create_vpc(
     name: str,
 ) -> str:
     """POST /vpcs and return the new vpc_id."""
+    print(f"[vpc] creating VPC {name!r} (topology={topology_name!r})", file=sys.stderr)
     resp = client.post(
         f"/orchestrator/tenants/{tenant_id}/vpcs",
         {
@@ -68,7 +70,14 @@ def create_vpc(
             "capabilities": [],
         },
     )
-    return str(resp.get("id", ""))
+    vpc_id = str(resp.get("id", ""))
+    if not vpc_id:
+        raise RuntimeError(
+            f"Bridge API returned no VPC id after creating {name!r} "
+            f"(topology={topology_name!r}). Response: {resp}"
+        )
+    print(f"[vpc] created VPC {name!r} → {vpc_id}", file=sys.stderr)
+    return vpc_id
 
 
 def create_subnet(
@@ -80,6 +89,7 @@ def create_subnet(
     cidr: str,
 ) -> str:
     """POST /subnets under vpc_id and return the new subnet_id."""
+    print(f"[vpc] creating subnet {name!r} (vpc={vpc_id}, cidr={cidr})", file=sys.stderr)
     resp = client.post(
         f"/orchestrator/tenants/{tenant_id}/subnets",
         {
@@ -89,18 +99,27 @@ def create_subnet(
             "parentVpcID": vpc_id,
         },
     )
-    return str(resp.get("id", ""))
+    subnet_id = str(resp.get("id", ""))
+    if not subnet_id:
+        raise RuntimeError(
+            f"Bridge API returned no subnet id after creating {name!r} "
+            f"(vpc={vpc_id}, cidr={cidr}). Response: {resp}"
+        )
+    print(f"[vpc] created subnet {name!r} → {subnet_id}", file=sys.stderr)
+    return subnet_id
 
 
 def delete_subnet(client: BridgeClient, tenant_id: str, subnet_id: str) -> None:
     """DELETE a subnet. Ignores 404 (already gone). No-op for non-UUID ids."""
     if not subnet_id or not is_orchestrator_resource_id(subnet_id):
         return
+    print(f"[vpc] deleting subnet {subnet_id}", file=sys.stderr)
     try:
         client.delete(f"/orchestrator/tenants/{tenant_id}/subnets/{subnet_id}")
     except ValueError as exc:
         if "404" not in str(exc):
             raise
+        print(f"[vpc] subnet {subnet_id} already gone (404)", file=sys.stderr)
 
 
 def delete_vpc(client: BridgeClient, tenant_id: str, vpc_id: str) -> None:
@@ -110,6 +129,7 @@ def delete_vpc(client: BridgeClient, tenant_id: str, vpc_id: str) -> None:
     """
     if not vpc_id or not is_orchestrator_resource_id(vpc_id):
         return
+    print(f"[vpc] deleting VPC {vpc_id} (and its subnets)", file=sys.stderr)
     try:
         resp = client.get(f"/orchestrator/tenants/{tenant_id}/subnets")
         subnets = resp if isinstance(resp, list) else (resp or {}).get("data", [])
@@ -120,9 +140,11 @@ def delete_vpc(client: BridgeClient, tenant_id: str, vpc_id: str) -> None:
         pass  # best-effort — proceed to VPC delete regardless
     try:
         client.delete(f"/orchestrator/tenants/{tenant_id}/vpcs/{vpc_id}")
+        print(f"[vpc] deleted VPC {vpc_id}", file=sys.stderr)
     except ValueError as exc:
         if "404" not in str(exc):
             raise
+        print(f"[vpc] VPC {vpc_id} already gone (404)", file=sys.stderr)
 
 
 def provision_discovery_vpcs(
@@ -140,14 +162,24 @@ def provision_discovery_vpcs(
     if epoch is None:
         epoch = int(time.time())
 
+    print("[vpc] provisioning discovery VPCs (compute + converged)...", file=sys.stderr)
     topologies = list_topologies(client)
     if not topologies:
-        raise RuntimeError("provision_discovery_vpcs: no topologies returned from Bridge API")
+        raise RuntimeError(
+            "Bridge API returned no network topologies. "
+            "Check that your tenant has at least one topology configured "
+            "(BRIDGE_URL and BRIDGE_TENANT are correct)."
+        )
 
     compute_topo = pick_compute_topology(topologies)
     converged_topo = pick_converged_topology(topologies)
     compute_topo_name = str(compute_topo.get("topology", "") or compute_topo.get("id", ""))
     converged_topo_name = str(converged_topo.get("topology", "") or converged_topo.get("id", ""))
+    print(
+        f"[vpc] using compute topology={compute_topo_name!r}, "
+        f"converged topology={converged_topo_name!r}",
+        file=sys.stderr,
+    )
 
     compute_vpc_id = create_vpc(client, tenant_id, compute_topo_name, f"{prefix}-compute-vpc-{epoch}")
     compute_subnet_id = create_subnet(
@@ -161,6 +193,10 @@ def provision_discovery_vpcs(
         f"{prefix}-converged-subnet-{epoch}", CONVERGED_CIDR,
     )
 
+    print(
+        f"[vpc] discovery VPCs ready: compute={compute_vpc_id}, converged={converged_vpc_id}",
+        file=sys.stderr,
+    )
     return compute_vpc_id, compute_subnet_id, converged_vpc_id, converged_subnet_id
 
 
@@ -175,5 +211,7 @@ def deprovision_discovery_vpcs(
     Skips any vpc_id that is not a valid orchestrator UUID — safe to call with
     "n/a" or empty string from import flow or older single-VPC state files.
     """
+    print("[vpc] deprovisioning discovery VPCs (compute + converged)...", file=sys.stderr)
     delete_vpc(client, tenant_id, compute_vpc_id)
     delete_vpc(client, tenant_id, converged_vpc_id)
+    print("[vpc] discovery VPC deprovisioning complete", file=sys.stderr)

@@ -60,6 +60,7 @@ def main() -> int:
     }
 
     if DEMO_MODE:
+        print("[bare_metal] DEMO_MODE: skipping API calls", file=sys.stderr)
         result.update(
             {
                 "success": True,
@@ -76,10 +77,15 @@ def main() -> int:
     else:
         client = BridgeClient.from_env()
         tenant = resolve_tenant_id(client, args.tenant)
+        print(f"[bare_metal] launching instance {args.name!r} for tenant {tenant}", file=sys.stderr)
 
         topologies = list_topologies(client)
         discovery_flow = is_discovery_flow(topologies)
         result["discovery_flow"] = discovery_flow
+        print(
+            f"[bare_metal] network flow: {'discovery' if discovery_flow else 'import'}",
+            file=sys.stderr,
+        )
 
         # Forward --flavor arg to env so provision_bm_node picks it up.
         if args.flavor:
@@ -94,6 +100,7 @@ def main() -> int:
             prefix="isv-bm",
         )
 
+        print(f"[bare_metal] instance ready: {node_ids[0]}", file=sys.stderr)
         result.update(
             {
                 "success": True,

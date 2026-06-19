@@ -45,12 +45,18 @@ def main() -> int:
     result: dict[str, Any] = {"success": False, "platform": "bare_metal"}
 
     if args.skip_destroy:
+        print("[bare_metal] teardown skipped (--skip-destroy)", file=sys.stderr)
         result.update({"success": True, "skipped": True})
     elif DEMO_MODE:
+        print("[bare_metal] DEMO_MODE: skipping API calls", file=sys.stderr)
         result["success"] = True
     else:
         client = BridgeClient.from_env()
         tenant = resolve_tenant_id(client, args.tenant)
+        print(
+            f"[bare_metal] tearing down: node={args.compute_node_id}, tenant={tenant}",
+            file=sys.stderr,
+        )
 
         deallocate_bm(
             client, tenant, args.compute_node_id,
@@ -67,6 +73,7 @@ def main() -> int:
         )
 
         result["success"] = True
+        print("[bare_metal] teardown complete", file=sys.stderr)
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

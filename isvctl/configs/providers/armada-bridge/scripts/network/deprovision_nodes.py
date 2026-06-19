@@ -64,21 +64,30 @@ def main() -> int:
     result: dict[str, Any] = {"success": False, "platform": "network"}
 
     if args.skip_destroy:
+        print("[network] deprovision skipped (--skip-destroy)", file=sys.stderr)
         result.update({"success": True, "skipped": True})
     elif os.environ.get("BRIDGE_NETWORK_NODE_IDS", "").strip():
+        print(
+            "[network] BRIDGE_NETWORK_NODE_IDS was set — nodes were pre-existing, "
+            "not deallocating",
+            file=sys.stderr,
+        )
         result.update({"success": True, "skipped": True, "reason": "pre_existing_nodes_not_deallocated"})
     elif DEMO_MODE:
+        print("[network] DEMO_MODE: skipping API calls", file=sys.stderr)
         result["success"] = True
     else:
         node_ids = _parse_instance_ids(args.instance_ids)
 
         if not node_ids:
+            print("[network] no instance_ids provided — nothing to deprovision", file=sys.stderr)
             result.update({"success": True, "skipped": True, "reason": "no instance_ids provided"})
             print(json.dumps(result, indent=2))
             return 0
 
         client = BridgeClient.from_env()
         tenant = resolve_tenant_id(client, args.tenant)
+        print(f"[network] deprovisioning {len(node_ids)} node(s): {node_ids}", file=sys.stderr)
 
         for node_id in node_ids:
             deallocate_bm(
@@ -90,6 +99,7 @@ def main() -> int:
             )
 
         result.update({"success": True, "deallocated": node_ids})
+        print(f"[network] all {len(node_ids)} node(s) deallocated", file=sys.stderr)
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

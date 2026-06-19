@@ -48,6 +48,30 @@ def _totp(secret_b32: str, *, digits: int = 6, interval: int = 30) -> str:
 
 _DEFAULT_COOKIE_PATH: Path = Path.home() / ".cache" / "isvctl" / "bridge_session.cookies"
 
+_ENV_HINTS: dict[str, str] = {
+    "BRIDGE_URL":      "Bridge API endpoint  e.g. export BRIDGE_URL=https://bridge.example.com",
+    "BRIDGE_USERNAME": "Bridge login email   e.g. export BRIDGE_USERNAME=you@example.com",
+    "BRIDGE_PASSWORD": "Bridge password      e.g. export BRIDGE_PASSWORD=yourpassword",
+}
+
+
+def _require_env(*names: str) -> None:
+    """Raise a clear RuntimeError listing every missing required env var."""
+    missing = [n for n in names if not os.environ.get(n)]
+    if not missing:
+        return
+    lines = ["The following required environment variables are not set:\n"]
+    for name in missing:
+        hint = _ENV_HINTS.get(name, f"export {name}=<value>")
+        lines.append(f"  {name:20s}  {hint}")
+    lines.append(
+        "\nSet them before running the suite:\n"
+        "  export BRIDGE_URL=...\n"
+        "  export BRIDGE_USERNAME=...\n"
+        "  export BRIDGE_PASSWORD=..."
+    )
+    raise RuntimeError("\n".join(lines))
+
 _SENSITIVE_KEYS: frozenset[str] = frozenset({"password", "token", "secret", "totp", "apiKey", "api_key"})
 
 
@@ -112,6 +136,7 @@ class BridgeClient:
         Optional: BRIDGE_HOST — HTTP Host header when BRIDGE_URL is an IP:port (lab ingress).
         Deletes any stale cached session cookie before logging in to guarantee a fresh session.
         """
+        _require_env("BRIDGE_URL", "BRIDGE_USERNAME", "BRIDGE_PASSWORD")
         if _DEFAULT_COOKIE_PATH.exists():
             _DEFAULT_COOKIE_PATH.unlink()
         ssl_context: ssl.SSLContext | None = None
@@ -144,6 +169,7 @@ class BridgeClient:
         Uses a separate cookie cache to avoid collisions with from_env().
         TLS verification is still controlled by BRIDGE_INSECURE.
         """
+        _require_env("BRIDGE_URL", "BRIDGE_USERNAME", "BRIDGE_PASSWORD")
         ssl_context: ssl.SSLContext | None = None
         if os.environ.get("BRIDGE_INSECURE") == "1":
             ssl_context = ssl.create_default_context()

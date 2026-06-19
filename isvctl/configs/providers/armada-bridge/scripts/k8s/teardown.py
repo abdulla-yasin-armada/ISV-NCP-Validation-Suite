@@ -52,14 +52,17 @@ def _should_destroy_nodes(state: dict[str, Any]) -> bool:
 
 def _delete_vm(client: BridgeClient, tenant_id: str, vm_id: str) -> None:
     """Delete a VM and wait for it to be gone. Idempotent — skips if already deleted (404)."""
+    print(f"[k8s] deleting VM {vm_id}", file=sys.stderr)
     try:
         get_vm(client, tenant_id, vm_id)
     except ValueError as exc:
         if "404" in str(exc):
+            print(f"[k8s] VM {vm_id} already gone (404) — skipping", file=sys.stderr)
             return
         raise
     client.delete(vm_path(tenant_id, vm_id))
     wait_for_vm_deleted(client, tenant_id, vm_id, timeout=300)
+    print(f"[k8s] VM {vm_id} deleted", file=sys.stderr)
 
 
 @handle_bridge_errors
@@ -77,11 +80,13 @@ def main() -> int:
     }
 
     if args.skip_destroy or os.environ.get("ARMADA_BRIDGE_SKIP_TEARDOWN", "").lower() == "true":
+        print("[k8s] teardown skipped (--skip-destroy / ARMADA_BRIDGE_SKIP_TEARDOWN)", file=sys.stderr)
         result.update({"success": True, "skipped": True, "message": "Teardown skipped"})
         print(json.dumps(result, indent=2))
         return 0
 
     if DEMO_MODE:
+        print("[k8s] DEMO_MODE: skipping API calls", file=sys.stderr)
         result.update(
             {
                 "success": True,
@@ -102,14 +107,17 @@ def main() -> int:
 
     client = BridgeClient.from_env()
     tenant_id = resolve_tenant_id(client, args.tenant)
+    print(f"[k8s] tearing down: cluster={cluster_id}, tenant={tenant_id}", file=sys.stderr)
 
     try:
         delete_cluster(client, tenant_id, cluster_id)
     except ValueError as exc:
         if "404" not in str(exc):
             raise
+        print(f"[k8s] cluster {cluster_id} already gone (404)", file=sys.stderr)
     else:
         wait_cluster_deleted(client, tenant_id, cluster_id)
+        print(f"[k8s] cluster {cluster_id} deleted", file=sys.stderr)
 
     result["cluster_id"] = cluster_id
     result["resources_deleted"].append(f"cluster:{cluster_id}")
@@ -152,6 +160,7 @@ def main() -> int:
 
     clear_state()
     result.update({"success": True, "message": "Cluster deleted"})
+    print(f"[k8s] teardown complete: {result['resources_deleted']}", file=sys.stderr)
     print(json.dumps(result, indent=2))
     return 0
 

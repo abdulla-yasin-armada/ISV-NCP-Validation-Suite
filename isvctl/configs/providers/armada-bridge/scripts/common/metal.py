@@ -151,6 +151,7 @@ def deallocate_bm(
     subsequent VPC/subnet deletes don't race with node cleanup.
     Pass poll=False for fire-and-forget (caller handles its own wait/sleep).
     """
+    print(f"[{label}] deallocating BM node {node_id}", file=sys.stderr)
     try:
         client.post(
             f"/orchestrator/tenants/{tenant_id}/metal/{node_id}/deallocate",
@@ -159,6 +160,8 @@ def deallocate_bm(
     except ValueError as exc:
         if "404" not in str(exc):
             raise
+        print(f"[{label}] node {node_id} already gone (404) — skipping", file=sys.stderr)
+        return
 
     if not poll:
         return
@@ -180,6 +183,7 @@ def deallocate_bm(
         interval=poll_interval,
         timeout=poll_timeout,
     )
+    print(f"[{label}] node {node_id} confirmed removed", file=sys.stderr)
 
 
 def provision_bm_node(
