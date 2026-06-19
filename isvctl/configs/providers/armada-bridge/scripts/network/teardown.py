@@ -22,8 +22,9 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
-from common.network import is_orchestrator_resource_id, list_tenant_subnets
+from common.network import is_orchestrator_resource_id
 from common.tenant import resolve_tenant_id
+from common.vpc import deprovision_discovery_vpcs
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -55,27 +56,7 @@ def main() -> int:
     else:
         client = BridgeClient.from_env()
         tenant_id = resolve_tenant_id(client, args.tenant)
-
-        def _delete_vpc(vpc_id: str) -> None:
-            """Delete all subnets of vpc_id then the VPC itself (best-effort 404)."""
-            if not vpc_id or not is_orchestrator_resource_id(vpc_id):
-                return
-            for subnet in list_tenant_subnets(client, tenant_id, vpc_id=vpc_id):
-                subnet_id = str(subnet.get("id", "") or "")
-                if is_orchestrator_resource_id(subnet_id):
-                    try:
-                        client.delete(f"/orchestrator/tenants/{tenant_id}/subnets/{subnet_id}")
-                    except ValueError as exc:
-                        if "status 404" not in str(exc):
-                            raise
-            try:
-                client.delete(f"/orchestrator/tenants/{tenant_id}/vpcs/{vpc_id}")
-            except ValueError as exc:
-                if "status 404" not in str(exc):
-                    raise
-
-        _delete_vpc(args.vpc_id)
-        _delete_vpc(args.converged_vpc_id)
+        deprovision_discovery_vpcs(client, tenant_id, args.vpc_id, args.converged_vpc_id)
         result["success"] = True
 
     print(json.dumps(result, indent=2))

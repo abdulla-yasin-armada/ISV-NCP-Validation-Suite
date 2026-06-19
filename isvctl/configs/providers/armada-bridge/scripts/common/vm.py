@@ -21,6 +21,9 @@ SSH keys (allocate + ConnectivityCheck):
 
 Other env:
   BRIDGE_VM_OS — OS image name for allocate (default: ubuntu-20.04-cuda-12.7)
+
+Higher-level provisioning:
+  provision_vm_nodes    End-to-end VM provisioning: optional VPC + allocate N VMs + poll
 """
 from __future__ import annotations
 
@@ -234,6 +237,77 @@ def power_action(client: BridgeClient, tenant: str, vm_id: str, action: str) -> 
     if action not in {"on", "off", "reboot"}:
         raise ValueError(f"Invalid power action: {action!r}")
     return client.post(vm_path(tenant, vm_id) + f"/power/{action}")
+
+
+def provision_vm_nodes(
+    client: BridgeClient,
+    tenant_id: str,
+    *,
+    epoch: int,
+    discovery_flow: bool,
+    vm_flavor: str,
+    count: int = 1,
+    name_prefix: str = "isv-vm-node",
+    poll_timeout: int = 840,
+) -> tuple[list[str], str, str]:
+    """Allocate ``count`` VM nodes, provisioning a compute VPC when needed.
+
+    Returns:
+        (node_ids, vpc_id, subnet_id)
+
+    Discovery flow: creates one compute VPC+subnet shared across all VMs.
+    Import flow: allocates VMs without subnet IDs.
+    VM names: ``{name_prefix}-{epoch}`` (count=1) or ``{name_prefix}-{epoch}-{i}`` (count>1).
+    """
+    # Lazy import to avoid circular dependency at module load time.
+    from .network import list_topologies
+    from .vpc import create_subnet, create_vpc, pick_compute_topology
+
+    vpc_id = "n/a"
+    subnet_id = ""
+    subnet_ids: list[str] = []
+
+    if discovery_flow:
+        topologies = list_topologies(client)
+        topo = pick_compute_topology(topologies)
+        topo_name = str(topo.get("topology", "") or topo.get("id", ""))
+        vpc_id = create_vpc(client, tenant_id, topo_name, f"{name_prefix}-vpc-{epoch}")
+        subnet_id = create_subnet(
+            client, tenant_id, vpc_id, topo_name,
+            f"{name_prefix}-subnet-{epoch}", "10.200.0.0/24",
+        )
+        subnet_ids = [subnet_id]
+
+    node_ids: list[str] = []
+    for i in range(count):
+        vm_name = f"{name_prefix}-{epoch}" if count == 1 else f"{name_prefix}-{epoch}-{i}"
+        public_key, _key_file = resolve_ssh_key(vm_name)
+
+        try:
+            allocate_resp = allocate_vm(
+                client, tenant_id,
+                name=vm_name, flavor=vm_flavor,
+                public_key=public_key,
+                subnet_ids=subnet_ids or None,
+            )
+            vm_id = extract_vm_id(allocate_resp)
+        except ValueError as exc:
+            if "status 409" not in str(exc):
+                raise
+            existing = find_vm_by_name(list_vms(client, tenant_id), vm_name)
+            if existing is None:
+                raise
+            vm_id = extract_vm_id(existing)
+
+        wait_for_vm_status(
+            client, tenant_id, vm_id,
+            target="running",
+            label=f"{name_prefix}_vm_{i}",
+            timeout=poll_timeout,
+        )
+        node_ids.append(vm_id)
+
+    return node_ids, vpc_id, subnet_id
 
 
 def allocate_vm(

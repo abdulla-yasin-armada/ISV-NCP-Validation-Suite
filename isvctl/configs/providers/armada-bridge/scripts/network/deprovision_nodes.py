@@ -4,10 +4,11 @@
 Deallocates BM nodes that were provisioned by provision_nodes (setup).
 
 For each node ID:
-  1. POST /orchestrator/tenants/{tenant}/metal/{node_id}/deallocate
-  2. Poll GET .../metal/computes until the node disappears from the list.
+  POST /orchestrator/tenants/{tenant}/metal/{node_id}/deallocate
+  Poll until the node disappears from the computes list.
 
 Pass --skip-destroy to skip all API calls (ARMADA_BRIDGE_SKIP_TEARDOWN=true).
+Pre-existing nodes (BRIDGE_NETWORK_NODE_IDS was set during setup) are not deallocated.
 404 on deallocate is treated as success (already gone).
 
 Output: {success, platform} or {success, platform, skipped: true}
@@ -24,7 +25,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
-from common.polling import poll_until
+from common.metal import deallocate_bm
 from common.tenant import resolve_tenant_id
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
@@ -48,42 +49,6 @@ def _parse_instance_ids(raw: str) -> list[str]:
     return [part.strip() for part in raw.split(",") if part.strip()]
 
 
-def _deallocate_node(client: BridgeClient, tenant: str, node_id: str) -> None:
-    """Fire deallocate request; ignore 404 (already gone)."""
-    try:
-        client.post(
-            f"/orchestrator/tenants/{tenant}/metal/{node_id}/deallocate",
-            {},
-        )
-    except ValueError as exc:
-        if "status 404" not in str(exc):
-            raise
-
-
-def _poll_until_gone(client: BridgeClient, tenant: str, node_id: str) -> None:
-    """Poll until the node is absent from the computes list."""
-    list_path = f"/orchestrator/tenants/{tenant}/metal/computes"
-
-    def check() -> tuple[bool, Any, str]:
-        resp = client.get(list_path)
-        nodes = resp if isinstance(resp, list) else (resp or {}).get("data", [])
-        node = next(
-            (n for n in nodes if str(n.get("id") or n.get("ID") or "") == node_id),
-            None,
-        )
-        if node is None:
-            return True, "absent", "node absent from computes list"
-        status = str(node.get("allocateStatus", "") or "")
-        return False, None, f"allocateStatus='{status}'"
-
-    poll_until(
-        check,
-        label=f"deprovision_{node_id[:8]}",
-        interval=_POLL_INTERVAL,
-        timeout=_POLL_TIMEOUT,
-    )
-
-
 @handle_bridge_errors
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -99,8 +64,7 @@ def main() -> int:
     result: dict[str, Any] = {"success": False, "platform": "network"}
 
     if args.skip_destroy:
-        result["success"] = True
-        result["skipped"] = True
+        result.update({"success": True, "skipped": True})
     elif os.environ.get("BRIDGE_NETWORK_NODE_IDS", "").strip():
         result.update({"success": True, "skipped": True, "reason": "pre_existing_nodes_not_deallocated"})
     elif DEMO_MODE:
@@ -109,10 +73,7 @@ def main() -> int:
         node_ids = _parse_instance_ids(args.instance_ids)
 
         if not node_ids:
-            # Nothing to deallocate — treat as success
-            result["success"] = True
-            result["skipped"] = True
-            result["reason"] = "no instance_ids provided"
+            result.update({"success": True, "skipped": True, "reason": "no instance_ids provided"})
             print(json.dumps(result, indent=2))
             return 0
 
@@ -120,13 +81,15 @@ def main() -> int:
         tenant = resolve_tenant_id(client, args.tenant)
 
         for node_id in node_ids:
-            _deallocate_node(client, tenant, node_id)
+            deallocate_bm(
+                client, tenant, node_id,
+                poll=True,
+                poll_timeout=_POLL_TIMEOUT,
+                poll_interval=_POLL_INTERVAL,
+                label=f"network_deprovision_{node_id[:8]}",
+            )
 
-        for node_id in node_ids:
-            _poll_until_gone(client, tenant, node_id)
-
-        result["success"] = True
-        result["deallocated"] = node_ids
+        result.update({"success": True, "deallocated": node_ids})
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

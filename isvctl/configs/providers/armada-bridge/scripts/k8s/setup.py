@@ -34,6 +34,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -62,17 +63,132 @@ from common.metal import (  # noqa: E402
     list_computes,
     node_mgmt_ip,
     poll_until_bm_ready,
+    provision_bm_node,
 )
 from common.network import (  # noqa: E402
     is_discovery_flow,
-    is_managed_network_id,
+    is_import_flow,
     list_topologies,
-    provision_discovery_network,
 )
 from common.tenant import resolve_tenant_id  # noqa: E402
-from provision_nodes import provision_nodes  # noqa: E402
+from common.vm import provision_vm_nodes  # noqa: E402
+from common.vpc import deprovision_discovery_vpcs, provision_discovery_vpcs  # noqa: E402
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
+
+_BM_POLL_TIMEOUT = 540
+_BM_POLL_INTERVAL = 15
+_VM_POLL_TIMEOUT = 840
+
+
+@dataclass(frozen=True)
+class ProvisionedNodes:
+    """Result of k8s worker node provisioning or reuse."""
+
+    discovery_flow: bool
+    import_flow: bool
+    node_type: str
+    node_ids: list[str]
+    vpc_id: str
+    subnet_id: str
+    provisioned: bool
+    converged_vpc_id: str = "n/a"
+    converged_subnet_id: str = ""
+    vm_name: str = ""
+
+
+def _resolve_k8s_node_type(*, discovery_flow: bool) -> str:
+    """Return bareMetal or vm based on BRIDGE_K8S_NODE_TYPE env var or topology."""
+    explicit = os.environ.get("BRIDGE_K8S_NODE_TYPE", "").strip().lower()
+    if explicit in {"baremetal", "bare_metal", "bm", "metal"}:
+        return "bareMetal"
+    if explicit in {"vm", "virtualmachine"}:
+        return "vm"
+    return "vm" if discovery_flow else "bareMetal"
+
+
+def _parse_k8s_node_ids(*, cli_node_ids: list[str]) -> list[str]:
+    """Merge BRIDGE_K8S_NODE_IDS env var and CLI --node-id args, preserving order."""
+    env_ids = os.environ.get("BRIDGE_K8S_NODE_IDS", "").strip()
+    ids: list[str] = []
+    if env_ids:
+        ids.extend(part.strip() for part in env_ids.split(",") if part.strip())
+    ids.extend(part.strip() for part in cli_node_ids if part.strip())
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for node_id in ids:
+        if node_id not in seen:
+            seen.add(node_id)
+            ordered.append(node_id)
+    return ordered
+
+
+def _provision_k8s_nodes(
+    client: BridgeClient,
+    tenant_id: str,
+    *,
+    cli_node_ids: list[str] | None = None,
+) -> ProvisionedNodes:
+    """Provision or reuse k8s worker node(s) based on topology flow."""
+    topologies = list_topologies(client)
+    discovery = is_discovery_flow(topologies)
+    import_flow = is_import_flow(topologies)
+    node_type = _resolve_k8s_node_type(discovery_flow=discovery)
+
+    existing_ids = _parse_k8s_node_ids(cli_node_ids=cli_node_ids or [])
+    if existing_ids:
+        print(
+            f"[k8s] using existing node(s): {existing_ids} (skipping catalog allocate)",
+            file=sys.stderr,
+        )
+        return ProvisionedNodes(
+            discovery_flow=discovery, import_flow=import_flow,
+            node_type=node_type, node_ids=existing_ids,
+            vpc_id="n/a", subnet_id="", provisioned=False,
+        )
+
+    if os.environ.get("BRIDGE_K8S_SKIP_NODE_PROVISION", "").strip().lower() in {"1", "true", "yes"}:
+        raise RuntimeError(
+            "No node ids supplied and BRIDGE_K8S_SKIP_NODE_PROVISION is set. "
+            "Provide --node-id / BRIDGE_K8S_NODE_IDS or unset the skip flag."
+        )
+
+    node_count = int(os.environ.get("BRIDGE_K8S_NODE_COUNT", "1"))
+    if node_count < 1:
+        raise RuntimeError(f"BRIDGE_K8S_NODE_COUNT must be >= 1, got {node_count}")
+
+    epoch = int(time.time())
+    vm_flavor = os.environ.get("BRIDGE_VM_FLAVOR", "gpu.1x")
+    converged_vpc_id = "n/a"
+    converged_subnet_id = ""
+
+    if node_type == "bareMetal":
+        node_ids, vpc_id, subnet_id, converged_vpc_id, converged_subnet_id = provision_bm_node(
+            client, tenant_id, epoch=epoch, discovery_flow=discovery,
+            count=node_count, prefix="isv-k8s-bm",
+            poll_interval=_BM_POLL_INTERVAL, poll_timeout=_BM_POLL_TIMEOUT,
+            label="k8s_provision_bm",
+        )
+    else:
+        node_ids, vpc_id, subnet_id = provision_vm_nodes(
+            client, tenant_id, epoch=epoch, discovery_flow=discovery,
+            vm_flavor=vm_flavor, count=node_count,
+            name_prefix="isv-k8s-node", poll_timeout=_VM_POLL_TIMEOUT,
+        )
+
+    print(
+        f"[k8s] provisioned {node_count} {node_type} node(s): {node_ids} "
+        f"(import_flow={import_flow}, discovery_flow={discovery}, vpc_id={vpc_id})",
+        file=sys.stderr,
+    )
+    return ProvisionedNodes(
+        discovery_flow=discovery, import_flow=import_flow,
+        node_type=node_type, node_ids=node_ids,
+        vpc_id=vpc_id, subnet_id=subnet_id, provisioned=True,
+        converged_vpc_id=converged_vpc_id, converged_subnet_id=converged_subnet_id,
+        vm_name=f"isv-k8s-node-{epoch}" if node_type == "vm" else "",
+    )
+
 
 # Absolute path to acl_probe.py so K8sApiNetworkAclCheck can run it from any CWD
 _ACL_PROBE_SCRIPT = str(_SCRIPT_DIR / "acl_probe.py")
@@ -91,16 +207,16 @@ def _provision_acl_probe_bm(
 
     The BM is kept alive after this function returns. Its node_id is written
     into ``state`` (keys ``acl_probe_node_id``, ``acl_probe_tenant_b_id``,
-    ``acl_probe_vpc_id``, ``acl_probe_subnet_id``) so that ``teardown.py``
-    can deallocate it later.
+    ``acl_probe_vpc_id``, ``acl_probe_subnet_id``, ``acl_probe_converged_vpc_id``)
+    so that ``teardown.py`` can deallocate it later.
 
     Returns the full ``unauthorized_probe_cmd`` string for
     ``K8sApiNetworkAclCheck``, or an empty string if provisioning fails (the
     validation will auto-skip when the command is empty).
     """
     epoch = int(time.time())
-    vpc_id = ""
-    subnet_id = ""
+    compute_vpc_id = ""
+    converged_vpc_id = ""
     node_id = ""
 
     try:
@@ -111,10 +227,10 @@ def _provision_acl_probe_bm(
 
         subnet_ids: list[str] = []
         if discovery:
-            vpc_id, subnet_id, _ = provision_discovery_network(
-                client, tenant_b_id, epoch=epoch, prefix="isv-acl-probe"
+            compute_vpc_id, compute_subnet_id, converged_vpc_id, converged_subnet_id = (
+                provision_discovery_vpcs(client, tenant_b_id, epoch=epoch, prefix="isv-acl-probe")
             )
-            subnet_ids = [subnet_id]
+            subnet_ids = [compute_subnet_id, converged_subnet_id]
 
         existing_ids = {compute_node_id(n) for n in list_computes(client, tenant_b_id)}
         existing_ids.discard("")
@@ -149,12 +265,11 @@ def _provision_acl_probe_bm(
 
         bm_user = os.environ.get("BRIDGE_BM_SSH_USER", "ubuntu").strip() or "ubuntu"
 
-        # Persist in state so teardown.py can clean up
         state.update({
             "acl_probe_node_id": node_id,
             "acl_probe_tenant_b_id": tenant_b_id,
-            "acl_probe_vpc_id": vpc_id,
-            "acl_probe_subnet_id": subnet_id,
+            "acl_probe_vpc_id": compute_vpc_id,
+            "acl_probe_converged_vpc_id": converged_vpc_id,
         })
 
         print(
@@ -170,22 +285,12 @@ def _provision_acl_probe_bm(
 
     except Exception as exc:
         print(f"WARNING: ACL probe BM provisioning failed: {exc}", file=sys.stderr)
-        # Best-effort cleanup on error (nothing saved to state yet)
         if node_id:
             try:
                 deallocate_bm(client, tenant_b_id, node_id, label="acl_probe_cleanup")
             except Exception:
                 pass
-        if is_managed_network_id(vpc_id):
-            if is_managed_network_id(subnet_id):
-                try:
-                    client.delete(f"/orchestrator/tenants/{tenant_b_id}/subnets/{subnet_id}")
-                except ValueError:
-                    pass
-            try:
-                client.delete(f"/orchestrator/tenants/{tenant_b_id}/vpcs/{vpc_id}")
-            except ValueError:
-                pass
+        deprovision_discovery_vpcs(client, tenant_b_id, compute_vpc_id, converged_vpc_id)
         return ""
 
 
@@ -317,7 +422,7 @@ def main() -> int:
 
     client = BridgeClient.from_env()
     tenant_id = resolve_tenant_id(client, args.tenant)
-    nodes_info = provision_nodes(client, tenant_id, cli_node_ids=args.node_id)
+    nodes_info = _provision_k8s_nodes(client, tenant_id, cli_node_ids=args.node_id)
 
     cluster_name = os.environ.get("BRIDGE_K8S_CLUSTER_NAME", f"isv-k8s-{int(time.time())}")
     install_gpu_tools = os.environ.get("BRIDGE_K8S_INSTALL_GPU_TOOLS", "true").lower() not in {
@@ -384,6 +489,8 @@ def main() -> int:
             "node_ids": nodes_info.node_ids,
             "vpc_id": nodes_info.vpc_id,
             "subnet_id": nodes_info.subnet_id,
+            "converged_vpc_id": nodes_info.converged_vpc_id,
+            "converged_subnet_id": nodes_info.converged_subnet_id,
             "unauthorized_probe_cmd": unauthorized_probe_cmd,
         }
     )
@@ -401,6 +508,8 @@ def main() -> int:
             "node_ids": nodes_info.node_ids,
             "vpc_id": nodes_info.vpc_id,
             "subnet_id": nodes_info.subnet_id,
+            "converged_vpc_id": nodes_info.converged_vpc_id,
+            "converged_subnet_id": nodes_info.converged_subnet_id,
             "provisioned_nodes": nodes_info.provisioned,
             **state_extra,
         }

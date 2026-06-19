@@ -183,6 +183,7 @@ commands:
           - "{{steps.launch_instance.instance_id}}"
           - "{{'--vpc-id=' + steps.launch_instance.vpc_id if steps.launch_instance.vpc_id | default('') else '' | default('')}}"
           - "{{'--subnet-id=' + steps.launch_instance.subnet_id if steps.launch_instance.subnet_id | default('') else '' | default('')}}"
+          - "{{'--converged-vpc-id=' + steps.launch_instance.converged_vpc_id if steps.launch_instance.converged_vpc_id | default('') else '' | default('')}}"
           - "{{teardown_flag}}"
         timeout: 300
 

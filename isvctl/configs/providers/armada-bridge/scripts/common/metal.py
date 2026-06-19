@@ -10,9 +10,12 @@ Functions:
   allocate_bm           POST /metal/allocate (ignores 409 already-in-progress)
   poll_until_bm_ready   Poll until N new BM nodes reach ready state
   deallocate_bm         POST /metal/{id}/deallocate + optional poll until absent
+  provision_bm_node     End-to-end BM provisioning: optional VPC pair + allocate + poll
 """
 from __future__ import annotations
 
+import os
+import sys
 from typing import Any
 
 from .bridge_client import BridgeClient
@@ -177,3 +180,67 @@ def deallocate_bm(
         interval=poll_interval,
         timeout=poll_timeout,
     )
+
+
+def provision_bm_node(
+    client: BridgeClient,
+    tenant_id: str,
+    *,
+    epoch: int,
+    discovery_flow: bool,
+    count: int = 1,
+    prefix: str = "isv-bm",
+    poll_interval: int = 15,
+    poll_timeout: int = 540,
+    label: str = "provision_bm",
+) -> tuple[list[str], str, str, str, str]:
+    """Allocate ``count`` BM nodes, provisioning VPCs when needed.
+
+    Returns:
+        (node_ids, compute_vpc_id, compute_subnet_id, converged_vpc_id, converged_subnet_id)
+
+    Discovery flow: creates one compute VPC+subnet and one converged VPC+subnet
+    (both subnet IDs required by the Bridge BM allocate API), then allocates all
+    nodes in a single POST.  Import flow skips VPC/subnet creation entirely.
+    """
+    # Lazy import to avoid circular dependency at module load time.
+    from .catalog import discover_bm_product_type_id
+    from .vpc import provision_discovery_vpcs
+
+    compute_vpc_id = "n/a"
+    compute_subnet_id = ""
+    converged_vpc_id = "n/a"
+    converged_subnet_id = ""
+    subnet_ids: list[str] = []
+
+    if discovery_flow:
+        compute_vpc_id, compute_subnet_id, converged_vpc_id, converged_subnet_id = (
+            provision_discovery_vpcs(client, tenant_id, epoch=epoch, prefix=prefix)
+        )
+        subnet_ids = [compute_subnet_id, converged_subnet_id]
+
+    existing_ids = {compute_node_id(node) for node in list_computes(client, tenant_id)}
+    existing_ids.discard("")
+
+    product_type_id, flavor_name, auto_discovered = discover_bm_product_type_id(
+        client,
+        explicit_id=os.environ.get("BRIDGE_BM_FLAVOR", ""),
+        gpu_type_filter=os.environ.get("BRIDGE_BM_GPU_TYPE", ""),
+    )
+    print(
+        f"[{prefix}] allocating {count} bareMetal node(s): "
+        f"productTypeId={product_type_id} ({flavor_name}, auto_discovered={auto_discovered})",
+        file=sys.stderr,
+    )
+
+    allocate_bm(client, tenant_id, product_type_id, count=count, subnet_ids=subnet_ids or None)
+
+    nodes = poll_until_bm_ready(
+        client, tenant_id, product_type_id, existing_ids,
+        count=count, label=label, interval=poll_interval, timeout=poll_timeout,
+    )
+    node_ids = [compute_node_id(n) for n in nodes]
+    missing = [nid for nid in node_ids if not nid]
+    if missing:
+        raise RuntimeError(f"BM allocate completed but {len(missing)} node id(s) missing")
+    return node_ids, compute_vpc_id, compute_subnet_id, converged_vpc_id, converged_subnet_id

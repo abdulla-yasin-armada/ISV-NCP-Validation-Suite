@@ -36,6 +36,7 @@ isv-ncp-validation-suite*.tar.gz
 .vscode/
 *.code-workspace
 .cursor/rules/approve-before-change.mdc
+.cursor/rules/engineering-standards.mdc
 isvctl/configs/providers/armada-bridge/scripts/pyrightconfig.json
 
 # Local test run results

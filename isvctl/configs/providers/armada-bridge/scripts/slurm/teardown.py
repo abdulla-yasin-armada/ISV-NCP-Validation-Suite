@@ -17,8 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.bridge_client import BridgeClient  # noqa: E402
 from common.errors import handle_bridge_errors  # noqa: E402
-from common.network import is_managed_network_id  # noqa: E402
-from common.polling import poll_until  # noqa: E402
+from common.metal import deallocate_bm  # noqa: E402
+from common.vpc import deprovision_discovery_vpcs  # noqa: E402
 from common.slurm_cluster import (  # noqa: E402
     delete_slurm_cluster,
     wait_slurm_deleted,
@@ -39,38 +39,6 @@ def _should_destroy_nodes(state: dict[str, Any]) -> bool:
     if explicit in {"0", "false", "no"}:
         return False
     return bool(state.get("provisioned_nodes"))
-
-
-def _deallocate_bm(client: BridgeClient, tenant_id: str, node_id: str) -> None:
-    try:
-        client.post(
-            f"/orchestrator/tenants/{tenant_id}/metal/{node_id}/deallocate",
-            {},
-        )
-    except ValueError as exc:
-        if "404" not in str(exc):
-            raise
-
-    list_path = f"/orchestrator/tenants/{tenant_id}/metal/computes"
-
-    def check_gone() -> tuple[bool, Any, str]:
-        computes = client.get(list_path)
-        nodes = computes if isinstance(computes, list) else (computes or {}).get("data", [])
-        node = next(
-            (n for n in nodes if str(n.get("id", "") or n.get("ID", "")) == node_id),
-            None,
-        )
-        if node is None:
-            return True, "absent", "server absent from list"
-        alloc_status = str(node.get("allocateStatus", "") or "")
-        return False, None, f"allocateStatus={alloc_status!r}"
-
-    poll_until(
-        check_gone,
-        label="slurm_teardown_bm",
-        interval=_BM_POLL_INTERVAL,
-        timeout=_BM_POLL_TIMEOUT,
-    )
 
 
 def _delete_vm(client: BridgeClient, tenant_id: str, vm_id: str) -> None:
@@ -143,17 +111,18 @@ def main() -> int:
                 _delete_vm(client, tenant_id, str(node_id))
                 result["resources_deleted"].append(f"vm:{node_id}")
             else:
-                _deallocate_bm(client, tenant_id, str(node_id))
+                deallocate_bm(
+                    client, tenant_id, str(node_id),
+                    poll=True,
+                    poll_timeout=_BM_POLL_TIMEOUT,
+                    poll_interval=_BM_POLL_INTERVAL,
+                    label="slurm_teardown_bm",
+                )
                 result["resources_deleted"].append(f"bare_metal:{node_id}")
 
     vpc_id = str(state.get("vpc_id") or "")
-    subnet_id = str(state.get("subnet_id") or "")
-    if is_managed_network_id(vpc_id):
-        if is_managed_network_id(subnet_id):
-            client.delete(f"/orchestrator/tenants/{tenant_id}/subnets/{subnet_id}")
-            result["resources_deleted"].append(f"subnet:{subnet_id}")
-        client.delete(f"/orchestrator/tenants/{tenant_id}/vpcs/{vpc_id}")
-        result["resources_deleted"].append(f"vpc:{vpc_id}")
+    converged_vpc_id = str(state.get("converged_vpc_id") or "")
+    deprovision_discovery_vpcs(client, tenant_id, vpc_id, converged_vpc_id)
 
     clear_state()
     result.update({"success": True, "message": "Slurm cluster deleted"})

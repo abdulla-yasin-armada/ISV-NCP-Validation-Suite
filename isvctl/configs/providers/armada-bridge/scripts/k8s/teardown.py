@@ -31,8 +31,8 @@ from common.cluster import delete_cluster, wait_cluster_deleted  # noqa: E402
 from common.errors import handle_bridge_errors  # noqa: E402
 from common.k8s_state import clear_state, load_state  # noqa: E402
 from common.metal import deallocate_bm  # noqa: E402
-from common.network import is_managed_network_id  # noqa: E402
 from common.tenant import resolve_tenant_id  # noqa: E402
+from common.vpc import deprovision_discovery_vpcs  # noqa: E402
 from common.vm import get_vm, vm_path, wait_for_vm_deleted  # noqa: E402
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
@@ -130,13 +130,8 @@ def main() -> int:
                 result["resources_deleted"].append(f"bare_metal:{node_id}")
 
     vpc_id = str(state.get("vpc_id") or "")
-    subnet_id = str(state.get("subnet_id") or "")
-    if is_managed_network_id(vpc_id):
-        if is_managed_network_id(subnet_id):
-            client.delete(f"/orchestrator/tenants/{tenant_id}/subnets/{subnet_id}")
-            result["resources_deleted"].append(f"subnet:{subnet_id}")
-        client.delete(f"/orchestrator/tenants/{tenant_id}/vpcs/{vpc_id}")
-        result["resources_deleted"].append(f"vpc:{vpc_id}")
+    converged_vpc_id = str(state.get("converged_vpc_id") or "")
+    deprovision_discovery_vpcs(client, tenant_id, vpc_id, converged_vpc_id)
 
     # Deallocate the Tenant B BM provisioned by setup.py (_provision_acl_probe_bm)
     # for the K8sApiNetworkAclCheck live probe (kept alive through the test phase).
@@ -152,15 +147,8 @@ def main() -> int:
         result["resources_deleted"].append(f"acl_probe_bm:{acl_node_id}")
 
         acl_vpc_id = str(state.get("acl_probe_vpc_id") or "")
-        acl_subnet_id = str(state.get("acl_probe_subnet_id") or "")
-        if is_managed_network_id(acl_vpc_id):
-            if is_managed_network_id(acl_subnet_id):
-                client.delete(
-                    f"/orchestrator/tenants/{acl_tenant_b_id}/subnets/{acl_subnet_id}"
-                )
-                result["resources_deleted"].append(f"acl_probe_subnet:{acl_subnet_id}")
-            client.delete(f"/orchestrator/tenants/{acl_tenant_b_id}/vpcs/{acl_vpc_id}")
-            result["resources_deleted"].append(f"acl_probe_vpc:{acl_vpc_id}")
+        acl_converged_vpc_id = str(state.get("acl_probe_converged_vpc_id") or "")
+        deprovision_discovery_vpcs(client, acl_tenant_b_id, acl_vpc_id, acl_converged_vpc_id)
 
     clear_state()
     result.update({"success": True, "message": "Cluster deleted"})

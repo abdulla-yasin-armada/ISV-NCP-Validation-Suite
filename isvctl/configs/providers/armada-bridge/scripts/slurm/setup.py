@@ -16,6 +16,7 @@ import json
 import os
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,10 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR.parent))
 sys.path.insert(0, str(_SCRIPT_DIR))
 
+from common.bridge_client import BridgeClient  # noqa: E402
 from common.errors import handle_bridge_errors  # noqa: E402
+from common.metal import provision_bm_node  # noqa: E402
+from common.network import is_discovery_flow, is_import_flow, list_topologies  # noqa: E402
 from common.slurm_cli import (  # noqa: E402
     configure_slurm_cli,
     remap_partitions,
@@ -37,9 +41,189 @@ from common.slurm_cluster import (  # noqa: E402
 )
 from common.slurm_state import save_state  # noqa: E402
 from common.tenant import resolve_tenant_id  # noqa: E402
-from provision_nodes import build_slurm_nodes, provision_slurm_nodes  # noqa: E402
+from common.vm import provision_vm_nodes, resolve_ssh_key  # noqa: E402
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
+
+_BM_POLL_TIMEOUT = 540
+_BM_POLL_INTERVAL = 15
+_VM_POLL_TIMEOUT = 840
+
+
+@dataclass(frozen=True)
+class SlurmNodes:
+    """Result of Slurm master/worker node provisioning or reuse."""
+
+    discovery_flow: bool
+    import_flow: bool
+    node_type: str
+    master_node_id: str
+    worker_node_ids: list[str]
+    node_ids: list[str]
+    vpc_id: str
+    subnet_id: str
+    provisioned: bool
+    converged_vpc_id: str = "n/a"
+    converged_subnet_id: str = ""
+    key_file: str = ""
+    ssh_user: str = ""
+
+
+def _split_env_ids(name: str) -> list[str]:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return []
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def _parse_slurm_node_ids(
+    *,
+    cli_node_ids: list[str] | None = None,
+    cli_master_id: str = "",
+    cli_worker_ids: list[str] | None = None,
+) -> tuple[str, list[str], list[str]]:
+    """Return (master_id, worker_ids, all_ids) from env/CLI."""
+    master = cli_master_id.strip() or os.environ.get("BRIDGE_SLURM_MASTER_NODE_ID", "").strip()
+    workers: list[str] = []
+    workers.extend(_split_env_ids("BRIDGE_SLURM_WORKER_NODE_IDS"))
+    workers.extend(part.strip() for part in (cli_worker_ids or []) if part.strip())
+
+    # Merge generic BRIDGE_K8S_NODE_IDS / BRIDGE_SLURM_NODE_IDS
+    env_generic = os.environ.get("BRIDGE_K8S_NODE_IDS", "").strip()
+    all_from_env = [p.strip() for p in env_generic.split(",") if p.strip()] if env_generic else []
+    all_from_env += [p.strip() for p in (cli_node_ids or []) if p.strip()]
+    all_from_slurm = _split_env_ids("BRIDGE_SLURM_NODE_IDS")
+
+    combined: list[str] = []
+    seen: set[str] = set()
+    for node_id in all_from_slurm + all_from_env:
+        if node_id not in seen:
+            seen.add(node_id)
+            combined.append(node_id)
+
+    if not master and combined:
+        master = combined[0]
+        workers = [nid for nid in combined[1:] if nid != master]
+    elif master and combined:
+        for nid in combined:
+            if nid != master and nid not in workers:
+                workers.append(nid)
+
+    all_ids = [master, *workers] if master else workers
+    return master, workers, all_ids
+
+
+def _resolve_slurm_node_type(*, discovery_flow: bool) -> str:
+    """Return bareMetal or vm. BRIDGE_SLURM_NODE_TYPE overrides auto-detection."""
+    explicit = os.environ.get("BRIDGE_SLURM_NODE_TYPE", "").strip()
+    if explicit:
+        return explicit
+    explicit_k8s = os.environ.get("BRIDGE_K8S_NODE_TYPE", "").strip().lower()
+    if explicit_k8s in {"baremetal", "bare_metal", "bm", "metal"}:
+        return "bareMetal"
+    if explicit_k8s in {"vm", "virtualmachine"}:
+        return "vm"
+    return "vm" if discovery_flow else "bareMetal"
+
+
+def build_slurm_nodes(
+    master_id: str,
+    worker_ids: list[str],
+    *,
+    is_allocated: bool = True,
+) -> list[dict[str, Any]]:
+    """Build the node list payload for the Bridge slurm cluster create API."""
+    nodes: list[dict[str, Any]] = [
+        {"id": master_id, "role": "master", "isAllocated": is_allocated},
+    ]
+    for worker_id in worker_ids:
+        nodes.append({"id": worker_id, "role": "worker", "isAllocated": is_allocated})
+    return nodes
+
+
+def _provision_slurm_nodes(
+    client: BridgeClient,
+    tenant_id: str,
+    *,
+    cli_node_ids: list[str] | None = None,
+    cli_master_id: str = "",
+    cli_worker_ids: list[str] | None = None,
+) -> SlurmNodes:
+    """Provision or reuse master/worker nodes for Slurm cluster creation."""
+    topologies = list_topologies(client)
+    discovery = is_discovery_flow(topologies)
+    import_flow = is_import_flow(topologies)
+    node_type = _resolve_slurm_node_type(discovery_flow=discovery)
+
+    master_id, worker_ids, all_ids = _parse_slurm_node_ids(
+        cli_node_ids=cli_node_ids,
+        cli_master_id=cli_master_id,
+        cli_worker_ids=cli_worker_ids,
+    )
+
+    if master_id:
+        _, key_file = resolve_ssh_key(f"isv-slurm-{master_id[:8]}")
+        ssh_user = (
+            os.environ.get("BRIDGE_SLURM_SSH_USER")
+            or os.environ.get("BRIDGE_SSH_USER")
+            or "ubuntu"
+        )
+        return SlurmNodes(
+            discovery_flow=discovery, import_flow=import_flow,
+            node_type=node_type, master_node_id=master_id,
+            worker_node_ids=worker_ids, node_ids=all_ids,
+            vpc_id="n/a", subnet_id="", provisioned=False,
+            key_file=key_file, ssh_user=ssh_user,
+        )
+
+    if os.environ.get("BRIDGE_SLURM_SKIP_NODE_PROVISION", "").strip().lower() in {"1", "true", "yes"}:
+        raise RuntimeError(
+            "No Slurm node ids supplied and BRIDGE_SLURM_SKIP_NODE_PROVISION is set. "
+            "Provide --node-id / BRIDGE_SLURM_NODE_IDS or unset the skip flag."
+        )
+
+    epoch = int(time.time())
+    vm_flavor = os.environ.get("BRIDGE_VM_FLAVOR", "gpu.1x")
+    worker_count = int(os.environ.get("BRIDGE_SLURM_WORKER_COUNT", "0"))
+    total_count = 1 + worker_count
+    converged_vpc_id = "n/a"
+    converged_subnet_id = ""
+
+    if node_type == "bareMetal":
+        all_ids, vpc_id, subnet_id, converged_vpc_id, converged_subnet_id = provision_bm_node(
+            client, tenant_id, epoch=epoch, discovery_flow=discovery,
+            count=total_count, prefix="isv-slurm-bm",
+            poll_interval=_BM_POLL_INTERVAL, poll_timeout=_BM_POLL_TIMEOUT,
+            label="slurm_provision_bm",
+        )
+    else:
+        all_ids, vpc_id, subnet_id = provision_vm_nodes(
+            client, tenant_id, epoch=epoch, discovery_flow=discovery,
+            vm_flavor=vm_flavor, count=total_count,
+            name_prefix="isv-slurm-node", poll_timeout=_VM_POLL_TIMEOUT,
+        )
+
+    master_id = all_ids[0]
+    worker_ids = all_ids[1:]
+    _, key_file = resolve_ssh_key(f"isv-slurm-{epoch}")
+    ssh_user = (
+        os.environ.get("BRIDGE_SLURM_SSH_USER")
+        or os.environ.get("BRIDGE_SSH_USER")
+        or "ubuntu"
+    )
+    print(
+        f"[slurm] provisioned {node_type} master={master_id} workers={worker_ids} "
+        f"(import_flow={import_flow}, discovery_flow={discovery})",
+        file=sys.stderr,
+    )
+    return SlurmNodes(
+        discovery_flow=discovery, import_flow=import_flow,
+        node_type=node_type, master_node_id=master_id,
+        worker_node_ids=worker_ids, node_ids=all_ids,
+        vpc_id=vpc_id, subnet_id=subnet_id, provisioned=True,
+        converged_vpc_id=converged_vpc_id, converged_subnet_id=converged_subnet_id,
+        key_file=key_file, ssh_user=ssh_user,
+    )
 
 
 @handle_bridge_errors
@@ -85,11 +269,9 @@ def main() -> int:
         print(json.dumps(result, indent=2))
         return 0
 
-    from common.bridge_client import BridgeClient
-
     client = BridgeClient.from_env()
     tenant_id = resolve_tenant_id(client, args.tenant)
-    nodes_info = provision_slurm_nodes(
+    nodes_info = _provision_slurm_nodes(
         client,
         tenant_id,
         cli_node_ids=args.node_id,
@@ -155,6 +337,10 @@ def main() -> int:
             "ssh_user": nodes_info.ssh_user,
             "discovery_flow": nodes_info.discovery_flow,
             "import_flow": nodes_info.import_flow,
+            "vpc_id": nodes_info.vpc_id,
+            "subnet_id": nodes_info.subnet_id,
+            "converged_vpc_id": nodes_info.converged_vpc_id,
+            "converged_subnet_id": nodes_info.converged_subnet_id,
         }
     )
     if slurm_bin_path:
@@ -188,6 +374,8 @@ def main() -> int:
             "node_ids": nodes_info.node_ids,
             "vpc_id": nodes_info.vpc_id,
             "subnet_id": nodes_info.subnet_id,
+            "converged_vpc_id": nodes_info.converged_vpc_id,
+            "converged_subnet_id": nodes_info.converged_subnet_id,
             "provisioned_nodes": nodes_info.provisioned,
             "key_file": key_file,
         }
