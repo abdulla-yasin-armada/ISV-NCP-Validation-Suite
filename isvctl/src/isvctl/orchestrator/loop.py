@@ -16,6 +16,7 @@ This module implements the test lifecycle using step-based execution:
 """
 
 import logging
+import os
 import shutil
 import tempfile
 import xml.etree.ElementTree as ET
@@ -515,6 +516,11 @@ class Orchestrator:
                 # the teardown gate even though no resources were created).
                 if phase_name == "setup" and any(not step.skip for step in phase_steps):
                     setup_steps_ran = True
+                    setup_output = self.context.data.get("steps", {}).get("setup") or {}
+                    env_exports = setup_output.get("env_exports") or {}
+                    for key, val in env_exports.items():
+                        if isinstance(val, str) and val.strip():
+                            os.environ[key] = val.strip()
 
                 phase_junitxml: str | None = None
                 if junit_tmpdir:

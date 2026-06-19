@@ -162,6 +162,14 @@ def main() -> int:
     if slurm_conf_path:
         inventory["slurm_conf_path"] = slurm_conf_path
 
+    env_exports: dict[str, str] = {}
+    if slurm_bin_path:
+        env_exports["PATH"] = f"{slurm_bin_path}:{os.environ.get('PATH', '')}"
+    if slurm_conf_path:
+        env_exports["SLURM_CONF"] = slurm_conf_path
+    if env_exports:
+        inventory["env_exports"] = env_exports
+
     save_state(
         {
             "tenant": args.tenant,

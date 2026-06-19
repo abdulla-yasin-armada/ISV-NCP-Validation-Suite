@@ -287,6 +287,9 @@ def main() -> int:
             "cluster_name": "demo-bridge-k8s",
             "cluster_id": "demo-cluster-id",
             "kubeconfig_path": str(default_kubeconfig_path()),
+            "env_exports": {
+                "KUBECONFIG": str(default_kubeconfig_path()),
+            },
             "kubernetes": {
                 "driver_version": "580.82.07",
                 "node_count": 1,
@@ -372,6 +375,9 @@ def main() -> int:
         {
             "cluster_id": cluster_id,
             "kubeconfig_path": str(kubeconfig_path),
+            "env_exports": {
+                "KUBECONFIG": str(kubeconfig_path),
+            },
             "discovery_flow": nodes_info.discovery_flow,
             "import_flow": nodes_info.import_flow,
             "node_type": nodes_info.node_type,

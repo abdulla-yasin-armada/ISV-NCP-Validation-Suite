@@ -29,6 +29,7 @@ from isvctl.cli import setup_logging
 from isvctl.cli.common import get_output_dir
 from isvctl.orchestrator.loop import Phase
 from isvctl.remote import SCPTransfer, SSHClient, TarArchive
+from isvctl.remote.archive import remote_extract_command
 from isvctl.remote.archive import DEFAULT_EXCLUDES as DEFAULT_ARCHIVE_EXCLUDES
 from isvctl.remote.archive import ArchiveError
 from isvctl.remote.transfer import SCPTransferError
@@ -44,6 +45,7 @@ DEFAULT_ARCHIVE_PATHS = [
     "isvctl/",
     "pyproject.toml",
     "uv.lock",
+    ".python-version",
 ]
 
 app = typer.Typer(
@@ -456,9 +458,16 @@ def run(
 # Ensure ~/.local/bin is in PATH (where uv is typically installed)
 export PATH="$HOME/.local/bin:$PATH"
 
+if [ -f "$HOME/bridge-isv.env" ]; then
+    echo "Sourcing $HOME/bridge-isv.env"
+    set -a
+    . "$HOME/bridge-isv.env"
+    set +a
+fi
+
 cd "{effective_remote_dir}"
 echo "Extracting archive..."
-tar -xzf "{archive_name}"
+{remote_extract_command(archive_name)}
 
 # Remove venv to avoid permission issues
 if [ -d ".venv" ]; then
