@@ -22,6 +22,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
+from common.context import print_run_context
 from common.errors import handle_bridge_errors
 from common.constants import TEST_PASSWORD
 from common.iam import (
@@ -45,6 +46,8 @@ def main() -> int:
     parser.add_argument("--tenant", required=True)
     parser.add_argument("--username", default="isv-test-user")
     args = parser.parse_args()
+
+    print_run_context("IAM")
 
     result: dict[str, Any] = {"success": False, "platform": "iam"}
 

@@ -55,12 +55,10 @@ def extract_tenant_org(all_orgs: JsonList, tenant_id: str) -> dict[str, Any] | N
 
 
 def extract_tenant_from_tenants(tenants: JsonList, tenant_name: str) -> dict[str, Any] | None:
-    """Return the tenant dict whose 'name' field matches tenant_name, or None."""
+    """Return the tenant dict matching tenant_name by name or UUID (ID field), or None."""
     for tenant in tenants:
-        if tenant.get("name") != tenant_name:
-            continue
-        return tenant
-
+        if tenant.get("name") == tenant_name or tenant.get("ID") == tenant_name:
+            return tenant
     return None
 
 

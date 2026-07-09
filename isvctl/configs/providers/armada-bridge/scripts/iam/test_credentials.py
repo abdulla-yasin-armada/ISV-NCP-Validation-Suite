@@ -1,37 +1,26 @@
 #!/usr/bin/env python3
 """test_credentials — Armada Bridge IAM suite, test phase.
 
-Proves the API key from create_user is valid via the auth-gateway only:
+Proves the API key from create_user is valid:
 
-  Step 1: POST /auth/login
-          Body: {email: credential_id, password: TEST_PASSWORD}
-          Establishes a session cookie — proves the user account is active.
+  Step 1: login_as(credential_id, TEST_PASSWORD) via BridgeClient
+          Establishes a session — proves the user account is active.
 
   Step 2: GET /key-manager/api-key
-          Cookie: <session>
-          Returns the stored API key as plain text.
+          Returns the stored API key.
           Compared against credential_secret — proves the issued key is stored.
-
-  Note: x-api-key header auth is a feature gap in the current auth-gateway
-  build (ApiKeyAuthMiddleware is defined but never registered).
-
-  BRIDGE_HOST: when set, added as the HTTP Host header on every request so the
-  ingress routes correctly when BRIDGE_URL is an internal IP:port address.
 
 Output: {success, authenticated, account_id, identity_id, platform: "iam"}
 """
 import argparse
-import http.cookiejar
 import json
 import os
-import ssl
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from common.bridge_client import BridgeClient
 from common.errors import handle_bridge_errors
 from common.constants import TEST_PASSWORD
 
@@ -56,88 +45,54 @@ def main() -> int:
                 "identity_id": args.credential_id,
             }
         )
-    else:
-        bridge_url = os.environ["BRIDGE_URL"].rstrip("/")
-        host_header = os.environ.get("BRIDGE_HOST", "").strip() or None
+        print(json.dumps(result, indent=2))
+        return 0
 
-        ssl_context: ssl.SSLContext | None = None
-        if os.environ.get("BRIDGE_INSECURE") == "1":
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
+    # Step 1: log in as the test user using BridgeClient (same path as create_user)
+    try:
+        user_client = BridgeClient.from_env().login_as(args.credential_id, TEST_PASSWORD)
+    except Exception as e:
+        result.update({"error": f"Login failed: {e}", "authenticated": False})
+        print(json.dumps(result, indent=2))
+        return 1
 
-        jar = http.cookiejar.CookieJar()
-        handlers: list[urllib.request.BaseHandler] = [urllib.request.HTTPCookieProcessor(jar)]
-        if ssl_context is not None:
-            handlers.append(urllib.request.HTTPSHandler(context=ssl_context))
-        opener = urllib.request.build_opener(*handlers)
-
-        # Step 1: authenticate as the test user
-        try:
-            login_body = json.dumps({"email": args.credential_id, "password": TEST_PASSWORD}).encode()
-            login_req = urllib.request.Request(
-                f"{bridge_url}/auth/login",
-                data=login_body,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            if host_header:
-                login_req.add_header("Host", host_header)
-            with opener.open(login_req, timeout=30) as resp:
-                resp.read()
-        except urllib.error.HTTPError as e:
-            e.read()
-            result.update(
-                {
-                    "error": f"Login failed (HTTP {e.code}): user account inactive or credentials invalid",
-                    "authenticated": False,
-                }
-            )
-            print(json.dumps(result, indent=2))
-            return 1
-
-        # Step 2: retrieve and verify the stored API key
-        try:
-            get_req = urllib.request.Request(
-                f"{bridge_url}/key-manager/api-key",
-                method="GET",
-            )
-            if host_header:
-                get_req.add_header("Host", host_header)
-            with opener.open(get_req, timeout=30) as resp:
-                stored_key = resp.read().decode().strip()
-        except urllib.error.HTTPError as e:
-            e.read()
-            result.update(
-                {
-                    "error": f"API key retrieval failed (HTTP {e.code})",
-                    "authenticated": False,
-                }
-            )
-            print(json.dumps(result, indent=2))
-            return 1
-
-        if not stored_key:
-            result.update({"error": "No API key stored for user", "authenticated": False})
-            print(json.dumps(result, indent=2))
-            return 1
-
-        if stored_key != args.credential_secret:
-            result.update({"error": "Stored API key does not match issued credential", "authenticated": False})
-            print(json.dumps(result, indent=2))
-            return 1
-
-        result.update(
-            {
-                "success": True,
-                "authenticated": True,
-                "account_id": args.credential_id,
-                "identity_id": args.credential_id,
-            }
+    # Step 2: retrieve and verify the stored API key.
+    # /key-manager/api-key returns plain text, not JSON, so use the client's
+    # internal opener directly to get the raw response.
+    try:
+        import urllib.request as _urllib_request
+        req = _urllib_request.Request(
+            user_client.base_url + "/key-manager/api-key",
+            method="GET",
         )
+        user_client._with_host(req)
+        with user_client._opener.open(req, timeout=30) as resp:
+            stored_key = resp.read().decode().strip()
+    except Exception as e:
+        result.update({"error": f"API key retrieval failed: {e}", "authenticated": False})
+        print(json.dumps(result, indent=2))
+        return 1
 
+    if not stored_key:
+        result.update({"error": "No API key stored for user", "authenticated": False})
+        print(json.dumps(result, indent=2))
+        return 1
+
+    if stored_key != args.credential_secret:
+        result.update({"error": "Stored API key does not match issued credential", "authenticated": False})
+        print(json.dumps(result, indent=2))
+        return 1
+
+    result.update(
+        {
+            "success": True,
+            "authenticated": True,
+            "account_id": args.credential_id,
+            "identity_id": args.credential_id,
+        }
+    )
     print(json.dumps(result, indent=2))
-    return 0 if result["success"] else 1
+    return 0
 
 
 if __name__ == "__main__":
