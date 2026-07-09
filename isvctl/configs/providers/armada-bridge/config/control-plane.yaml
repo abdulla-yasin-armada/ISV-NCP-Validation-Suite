@@ -6,6 +6,12 @@
 # disable_access_key + verify_key_rejected have best_effort: true because
 # Bridge has no PATCH /key-manager/api-key endpoint. They fail in non-demo
 # mode but do not abort the suite.
+#
+# Tenant create/delete requires platform (super) admin — not tenant-scoped admin.
+# Billing-enabled clusters (bridge.armada.ai):
+#   BRIDGE_BILLING=1  — extended POST /orchestrator/tenants payload for M360 billing
+#   BRIDGE_BILLING_CONTACT_EMAIL — optional; defaults to test@test.com when BRIDGE_USERNAME
+#     is not an email (e.g. admin). A unique tenant name is generated per run.
 
 import:
   - ../../../suites/control-plane.yaml
@@ -32,8 +38,8 @@ commands:
       - name: create_tenant
         phase: setup
         command: "python ../scripts/control-plane/create_tenant.py"
-        args: ["--tenant-name", "isv-test-tenant"]
-        timeout: 60
+        args: ["--name-prefix", "isv-test-tenant"]
+        timeout: 120
 
       - name: test_access_key
         phase: test
@@ -99,7 +105,7 @@ commands:
         command: "python ../scripts/control-plane/delete_tenant.py"
         args:
           - "--tenant-id={{steps.create_tenant.tenant_id | default('')}}"
-          - "--tenant-name=isv-test-tenant"
+          - "--tenant-name={{steps.create_tenant.tenant_name | default('')}}"
           - "{{teardown_flag}}"
         timeout: 60
 

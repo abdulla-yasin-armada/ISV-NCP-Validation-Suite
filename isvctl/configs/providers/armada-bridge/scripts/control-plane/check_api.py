@@ -18,7 +18,9 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
+from common.context import print_run_context
 from common.errors import handle_bridge_errors
+from common.tenant import billing_contact_email, billing_tenant_create_enabled
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
 
@@ -46,6 +48,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant", required=True)
     args = parser.parse_args()
+
+    print_run_context(
+        "Control Plane",
+        {
+            "test_tenant_prefix": "isv-test-tenant (auto-suffixed per run)",
+            "BRIDGE_BILLING": "true" if billing_tenant_create_enabled() else "false",
+            "billing_contact_email": billing_contact_email(),
+        },
+    )
 
     result: dict[str, Any] = {"success": False, "platform": "control_plane"}
 
