@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ sys.path.insert(0, str(_SCRIPT_DIR.parent))
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from common.bridge_client import BridgeClient  # noqa: E402
+from common.context import print_run_context  # noqa: E402
 from common.errors import handle_bridge_errors  # noqa: E402
 from common.metal import provision_bm_node  # noqa: E402
 from common.network import is_discovery_flow, is_import_flow, list_topologies  # noqa: E402
@@ -197,15 +199,27 @@ def _provision_slurm_nodes(
             label="slurm_provision_bm",
         )
     else:
+        # Use a single shared key for all Slurm VMs so the master node can SSH
+        # to workers (Bridge's Ansible tests this during Slurm installation).
+        slurm_shared_key_name = f"isv-slurm-node-{epoch}"
         all_ids, vpc_id, subnet_id = provision_vm_nodes(
             client, tenant_id, epoch=epoch, discovery_flow=discovery,
             vm_flavor=vm_flavor, count=total_count,
             name_prefix="isv-slurm-node", poll_timeout=_VM_POLL_TIMEOUT,
+            shared_key_name=slurm_shared_key_name,
         )
 
     master_id = all_ids[0]
     worker_ids = all_ids[1:]
-    _, key_file = resolve_ssh_key(f"isv-slurm-{epoch}")
+    # Resolve the key using the same name used during provisioning.
+    # For BM, BRIDGE_SSH_KEY_FILE overrides this value in main() anyway.
+    if node_type != "bareMetal":
+        master_key_name = slurm_shared_key_name
+    else:
+        master_key_name = (
+            f"isv-slurm-node-{epoch}" if total_count == 1 else f"isv-slurm-node-{epoch}-0"
+        )
+    _, key_file = resolve_ssh_key(master_key_name)
     ssh_user = (
         os.environ.get("BRIDGE_SLURM_SSH_USER")
         or os.environ.get("BRIDGE_SSH_USER")
@@ -244,6 +258,15 @@ def main() -> int:
         help="Worker node UUID (repeatable).",
     )
     args = parser.parse_args()
+
+    node_type = os.environ.get("BRIDGE_SLURM_NODE_TYPE") or os.environ.get("BRIDGE_K8S_NODE_TYPE", "bm")
+    worker_count = os.environ.get("BRIDGE_SLURM_WORKER_COUNT", "0")
+    vm_flavor = os.environ.get("BRIDGE_VM_FLAVOR", "")
+    print_run_context("Slurm", {
+        "NODE_TYPE"               : node_type,
+        "BRIDGE_SLURM_WORKER_COUNT": worker_count,
+        "BRIDGE_VM_FLAVOR"        : vm_flavor or "(not set — BM)",
+    })
 
     if DEMO_MODE:
         print("[slurm] DEMO_MODE: skipping API calls", file=sys.stderr)
@@ -285,6 +308,55 @@ def main() -> int:
     cluster_version = os.environ.get("BRIDGE_SLURM_VERSION", "24.05.6")
     cluster_description = os.environ.get("BRIDGE_SLURM_DESCRIPTION", "ISV Slurm validation cluster")
 
+    # Wait for SSH on the master VM before creating the Slurm cluster.
+    # Bridge's Ansible installs Slurm by SSH-ing into the nodes immediately after
+    # cluster creation. If SSH isn't ready yet the cluster goes to 'failed' with
+    # "Connection refused". We wait here (from our network) as a proxy for SSH
+    # being generally available, then allow an extra settling delay.
+    key_file = os.environ.get("BRIDGE_SSH_KEY_FILE", nodes_info.key_file)
+    if not key_file:
+        raise RuntimeError("SSH key file required for Slurm CLI access (set BRIDGE_SSH_KEY_FILE)")
+
+    if nodes_info.node_type == "vm":
+        from common.slurm_cli import resolve_node_host, resolve_ssh_user  # noqa: E402
+        from common.ssh_utils import wait_for_ssh  # noqa: E402
+        master_ssh_user = resolve_ssh_user(node_type=nodes_info.node_type)
+        ssh_timeout = int(os.environ.get("BRIDGE_SLURM_SSH_TIMEOUT", "600"))
+
+        # Wait for SSH on ALL nodes — Bridge's Ansible connects to each one.
+        all_node_ids = [nodes_info.master_node_id] + nodes_info.worker_node_ids
+        for node_id in all_node_ids:
+            node_host = resolve_node_host(
+                client, tenant_id, node_id, node_type=nodes_info.node_type
+            )
+            label = "master" if node_id == nodes_info.master_node_id else "worker"
+            print(
+                f"[slurm] waiting for SSH on {label} VM {node_host} ({node_id[:8]}...) before creating cluster...",
+                file=sys.stderr,
+            )
+            wait_for_ssh(node_host, key_file, username=master_ssh_user, timeout=ssh_timeout)
+
+        # Wait for cloud-init to complete on master so Bridge's Ansible finds all
+        # prerequisites ready (package repos, user setup, etc.)
+        master_host = resolve_node_host(
+            client, tenant_id, nodes_info.master_node_id, node_type=nodes_info.node_type
+        )
+        print("[slurm] waiting for cloud-init to complete on master VM...", file=sys.stderr)
+        _ci_result = subprocess.run(
+            [
+                "ssh",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "UserKnownHostsFile=/dev/null",
+                "-o", "ConnectTimeout=10",
+                "-o", "BatchMode=yes",
+                "-i", key_file,
+                f"{master_ssh_user}@{master_host}",
+                "cloud-init status --wait 2>/dev/null || true",
+            ],
+            capture_output=True, text=True, timeout=300, check=False,
+        )
+        print(f"[slurm] cloud-init output: {_ci_result.stdout.strip() or _ci_result.stderr.strip()!r}", file=sys.stderr)
+
     created = create_slurm_cluster(
         client,
         tenant_id,
@@ -295,10 +367,6 @@ def main() -> int:
     )
     cluster_id = extract_slurm_id(created)
     cluster = wait_slurm_running(client, tenant_id, cluster_id)
-
-    key_file = os.environ.get("BRIDGE_SSH_KEY_FILE", nodes_info.key_file)
-    if not key_file:
-        raise RuntimeError("SSH key file required for Slurm CLI access (set BRIDGE_SSH_KEY_FILE)")
 
     cli_mode, slurm_bin_path, slurm_conf_path = configure_slurm_cli(
         client=client,

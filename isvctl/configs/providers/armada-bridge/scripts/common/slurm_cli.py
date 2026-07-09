@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,8 @@ def _ssh_base_args(key_file: str, host: str, username: str) -> list[str]:
         "-o",
         "StrictHostKeyChecking=no",
         "-o",
+        "UserKnownHostsFile=/dev/null",
+        "-o",
         "ConnectTimeout=15",
         "-o",
         "BatchMode=yes",
@@ -87,6 +90,8 @@ def _scp_base_args(key_file: str, host: str, username: str) -> list[str]:
         "scp",
         "-o",
         "StrictHostKeyChecking=no",
+        "-o",
+        "UserKnownHostsFile=/dev/null",
         "-o",
         "ConnectTimeout=15",
         "-o",
@@ -200,17 +205,32 @@ def configure_slurm_cli(
         username=username,
         key_file=key_file,
     )
-    probe = subprocess.run(
-        [str(bin_dir / "sinfo"), "-h", "-o", "%P"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if probe.returncode != 0 or not probe.stdout.strip():
-        raise RuntimeError(
-            f"Slurm CLI not reachable via SSH wrappers on {host}: "
-            f"{probe.stderr.strip() or probe.stdout.strip()}"
+    sinfo_bin = str(bin_dir / "sinfo")
+    slurm_ready_timeout = int(os.environ.get("BRIDGE_SLURM_READY_TIMEOUT", "300"))
+    slurm_ready_interval = 15
+    deadline = time.monotonic() + slurm_ready_timeout
+    last_error = ""
+    while True:
+        probe = subprocess.run(
+            [sinfo_bin, "-h", "-o", "%P"],
+            capture_output=True,
+            text=True,
+            check=False,
         )
+        if probe.returncode == 0 and probe.stdout.strip():
+            break
+        last_error = probe.stderr.strip() or probe.stdout.strip()
+        elapsed = int(slurm_ready_timeout - (deadline - time.monotonic()))
+        print(
+            f"[slurm] sinfo not ready yet on {host}: {last_error!r} ({elapsed}s elapsed, timeout={slurm_ready_timeout}s)",
+            file=sys.stderr,
+        )
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"Slurm CLI not reachable via SSH wrappers on {host} after {slurm_ready_timeout}s: "
+                f"{last_error}"
+            )
+        time.sleep(slurm_ready_interval)
     return "ssh", str(bin_dir), None
 
 
