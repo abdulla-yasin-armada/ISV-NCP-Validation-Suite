@@ -94,7 +94,7 @@ def main() -> int:
         reboot_requested_at = time.time()
         power_action(client, tenant_id, args.vm_id, "reboot")
         result["reboot_initiated"] = True
-
+        print("[reboot_instance] waiting 60s for libvirt to complete reboot ...", file=sys.stderr)
         time.sleep(args.wait_before_check)
         vm = wait_for_vm_status(
             client,
@@ -106,7 +106,9 @@ def main() -> int:
         )
         public_ip = get_public_ip(vm) or public_ip
         ssh_user = str(vm.get("userName") or ssh_user)
+        print(f"[reboot_instance] waiting for SSH on {public_ip} ...", file=sys.stderr)
         wait_for_ssh(public_ip, args.key_file, username=ssh_user, timeout=_SSH_TIMEOUT)
+        print(f"[reboot_instance] SSH confirmed ready on {public_ip}", file=sys.stderr)
 
         post_uptime = get_uptime_via_ssh(public_ip, args.key_file, ssh_user)
         if post_uptime is None:

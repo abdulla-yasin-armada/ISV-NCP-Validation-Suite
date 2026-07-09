@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """teardown — Armada Bridge VM suite, teardown phase.
 
-Terminates a VM instance via:
+Terminates one or more VM instances via:
   DELETE /orchestrator/tenants/<tenant>/vms/<vm_id>
 
-Polls GET until Bridge returns 404 (delete complete).
+Polls GET until Bridge returns 404 (delete complete) for each VM.
 
-Idempotent: if the VM is already gone, skips DELETE and returns success.
+Idempotent: if a VM is already gone, skips DELETE and continues.
 
 Pass --skip-destroy when ARMADA_BRIDGE_SKIP_TEARDOWN=true (wired via vm.yaml
 teardown_flag).
@@ -30,14 +30,51 @@ from common.tenant import resolve_tenant_id
 from common.vm import get_vm, vm_path, wait_for_vm_deleted
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
-_POLL_TIMEOUT = 105  # vm.yaml teardown step timeout is 120s
+_POLL_TIMEOUT = 270  # vm.yaml teardown step timeout is 300s
+
+
+def _parse_vm_ids(vm_id: str, vm_ids: str) -> list[str]:
+    if vm_ids.strip():
+        ids = [part.strip() for part in vm_ids.split(",") if part.strip()]
+    elif vm_id.strip():
+        ids = [vm_id.strip()]
+    else:
+        raise RuntimeError("teardown requires --vm-id or --vm-ids")
+    # Preserve order while dropping duplicates.
+    seen: set[str] = set()
+    unique: list[str] = []
+    for vm in ids:
+        if vm not in seen:
+            seen.add(vm)
+            unique.append(vm)
+    return unique
+
+
+def _delete_vm(client: BridgeClient, tenant_id: str, vm_id: str) -> str | None:
+    """Delete one VM. Returns resource label when deleted, None if already gone."""
+    try:
+        get_vm(client, tenant_id, vm_id)
+    except ValueError as exc:
+        if "404" in str(exc):
+            return None
+        raise
+
+    client.delete(vm_path(tenant_id, vm_id))
+    wait_for_vm_deleted(
+        client,
+        tenant_id,
+        vm_id,
+        timeout=_POLL_TIMEOUT,
+    )
+    return f"instance:{vm_id}"
 
 
 @handle_bridge_errors
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant", required=True)
-    parser.add_argument("--vm-id", required=True)
+    parser.add_argument("--vm-id", default="", help="Single VM id (legacy)")
+    parser.add_argument("--vm-ids", default="", help="Comma-separated VM ids")
     parser.add_argument("--skip-destroy", action="store_true")
     args = parser.parse_args()
 
@@ -57,48 +94,42 @@ def main() -> int:
             }
         )
     elif DEMO_MODE:
+        demo_ids = _parse_vm_ids(args.vm_id, args.vm_ids) or ["demo-vm-abc0"]
         result.update(
             {
                 "success": True,
-                "resources_deleted": ["instance:demo-vm-abc123"],
-                "message": "VM deleted",
+                "resources_deleted": [f"instance:{vm_id}" for vm_id in demo_ids],
+                "message": f"Deleted {len(demo_ids)} VM(s)",
             }
         )
     else:
         client = BridgeClient.from_env()
         tenant_id = resolve_tenant_id(client, args.tenant)
+        vm_ids = _parse_vm_ids(args.vm_id, args.vm_ids)
 
-        already_gone = False
-        try:
-            get_vm(client, tenant_id, args.vm_id)
-        except ValueError as exc:
-            if "404" in str(exc):
-                already_gone = True
+        deleted: list[str] = []
+        already_gone = 0
+        for vm_id in vm_ids:
+            label = _delete_vm(client, tenant_id, vm_id)
+            if label:
+                deleted.append(label)
             else:
-                raise
+                already_gone += 1
 
-        if already_gone:
-            result.update(
-                {
-                    "success": True,
-                    "message": "VM not found (already deleted)",
-                }
-            )
+        if deleted:
+            message = f"Deleted {len(deleted)} VM(s)"
+        elif already_gone:
+            message = f"All {already_gone} VM(s) already deleted"
         else:
-            client.delete(vm_path(tenant_id, args.vm_id))
-            wait_for_vm_deleted(
-                client,
-                tenant_id,
-                args.vm_id,
-                timeout=_POLL_TIMEOUT,
-            )
-            result.update(
-                {
-                    "success": True,
-                    "resources_deleted": [f"instance:{args.vm_id}"],
-                    "message": "VM deleted",
-                }
-            )
+            message = "No VMs to delete"
+
+        result.update(
+            {
+                "success": True,
+                "resources_deleted": deleted,
+                "message": message,
+            }
+        )
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1

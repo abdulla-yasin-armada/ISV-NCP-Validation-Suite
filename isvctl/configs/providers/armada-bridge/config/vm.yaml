@@ -23,7 +23,8 @@
 #
 # Usage (live):
 #   BRIDGE_URL, BRIDGE_USERNAME, BRIDGE_PASSWORD, BRIDGE_TENANT, BRIDGE_INSECURE=1
-#   Optional: BRIDGE_VM_FLAVOR, BRIDGE_VM_OS, BRIDGE_VM_REGION, BRIDGE_VPC_ID, BRIDGE_SG_ID
+#   Optional: BRIDGE_VM_COUNT, BRIDGE_VM_FLAVOR_TEMPLATE_ID, BRIDGE_VM_FLAVOR (UUID or name hint),
+#   BRIDGE_VM_GPU_TYPE (auto-discover filter), BRIDGE_VM_OS, BRIDGE_VPC_ID, BRIDGE_SG_ID
 
 import:
   - ../../../suites/vm.yaml
@@ -38,17 +39,9 @@ commands:
         phase: setup
         command: "python ../scripts/vm/launch_instance.py"
         args:
-          - "--tenant"
-          - "{{bridge_tenant}}"
           - "--name"
           - "isv-test-gpu"
-          - "--flavor"
-          - "{{bridge_flavor}}"
-          - "--vpc-id"
-          - "{{bridge_vpc_id}}"
-          - "--security-group-id"
-          - "{{bridge_security_group_id}}"
-        timeout: 900
+        timeout: 1500
 
       - name: list_instances
         phase: test
@@ -81,6 +74,8 @@ commands:
           - "{{bridge_tenant}}"
           - "--vm-id"
           - "{{steps.launch_instance.instance_id}}"
+          - "--public-ip"
+          - "{{steps.launch_instance.public_ip}}"
         timeout: 120
 
       - name: start_instance
@@ -171,19 +166,30 @@ commands:
         args:
           - "--tenant"
           - "{{bridge_tenant}}"
-          - "--vm-id"
-          - "{{steps.launch_instance.instance_id}}"
+          - "--vm-ids"
+          - "{{steps.launch_instance.instance_ids | join(',')}}"
           - "{{teardown_flag}}"
-        timeout: 120
+        timeout: 300
 
 tests:
   cluster_name: "armada-bridge-vm-validation"
   description: "Armada Bridge VM lifecycle validation"
 
+  exclude:
+    tests:
+      - CloudInitCheck         # Bridge KVM VMs have no AWS-style metadata service (169.254.169.254)
+      - DriverCheck            # CUDA toolkit (nvcc) not installed on Bridge KVM VM image
+      - ContainerRuntimeCheck  # Docker not installed on Bridge KVM VM image
+      - InstanceTagCheck       # Bridge has no VM tagging API (GET /vms/<id>/tags not exposed)
+      - SerialConsoleCheck     # Serial console not available on Bridge KVM VMs
+      - ConsoleRbacCheck       # Console RBAC not available on Bridge KVM VMs
+
   settings:
     bridge_url: "{{env.BRIDGE_URL | default('')}}"
     bridge_tenant: "{{env.BRIDGE_TENANT | default('demo-tenant')}}"
-    bridge_flavor: "{{env.BRIDGE_VM_FLAVOR | default('gpu.1x')}}"
+    bridge_flavor: "{{env.BRIDGE_VM_FLAVOR | default('')}}"
+    bridge_flavor_template_id: "{{env.BRIDGE_VM_FLAVOR_TEMPLATE_ID | default('')}}"
+    bridge_vm_count: "{{env.BRIDGE_VM_COUNT | default('1')}}"
     bridge_vpc_id: "{{env.BRIDGE_VPC_ID | default('n/a')}}"
     bridge_security_group_id: "{{env.BRIDGE_SG_ID | default('n/a')}}"
     teardown_flag: "{{(env.ARMADA_BRIDGE_SKIP_TEARDOWN == 'true') | ternary('--skip-destroy', '')}}"
