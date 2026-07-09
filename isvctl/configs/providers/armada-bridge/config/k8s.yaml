@@ -57,7 +57,7 @@ commands:
         args:
           - "--tenant"
           - "{{bridge_tenant}}"
-        timeout: 1800
+        timeout: 3600
 
       - name: teardown
         phase: teardown
@@ -147,6 +147,7 @@ tests:
           min_bus_bw_gbps: 0.05
           quick_mode: true
           timeout: 1800
+          startup_timeout: 600
           use_compute_domain: auto
 
     k8s_network:

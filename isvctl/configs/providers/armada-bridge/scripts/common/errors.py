@@ -32,11 +32,24 @@ def handle_bridge_errors(func: F) -> F:
             print(f"\n[ERROR] {exc}", file=sys.stderr)
             print(json.dumps({"success": False, "error": f"Not implemented: {exc}"}))
             return 1
+        except (RuntimeError, ValueError) as exc:
+            # Known user-facing errors (missing env vars, API rejections, bad config).
+            # The message itself is the full diagnosis — no traceback needed.
+            print(f"\n[ERROR] {exc}", file=sys.stderr)
+            print(
+                json.dumps(
+                    {
+                        "success": False,
+                        "error": str(exc),
+                        "error_type": type(exc).__name__,
+                    }
+                )
+            )
+            return 1
         except Exception as exc:
-            # Full traceback to stderr for debugging — not shown to the user directly.
-            print("\n[ERROR] Step failed:", file=sys.stderr)
+            # Unexpected error (bug) — print full traceback to stderr for debugging.
+            print("\n[ERROR] Unexpected failure:", file=sys.stderr)
             print(traceback.format_exc(), file=sys.stderr)
-            # Clean message to stdout — this is what isvctl surfaces to the user.
             print(
                 json.dumps(
                     {

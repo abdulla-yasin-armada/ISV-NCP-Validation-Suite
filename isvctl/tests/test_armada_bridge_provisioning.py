@@ -187,6 +187,7 @@ class TestProvisionBmNodeDiscoveryFlow:
 class TestProvisionVmNodes:
     def test_import_flow_no_vpc_created(self, provision_vm_nodes_fn, vm_mod):
         with (
+            patch.object(vm_mod, "resolve_vm_flavor_template_id", return_value=("ft-1", "gpu.small")),
             patch.object(vm_mod, "resolve_ssh_key", return_value=("pub-key", "/key.pem")),
             patch.object(vm_mod, "allocate_vm", return_value={"id": _UUID1}),
             patch.object(vm_mod, "extract_vm_id", return_value=_UUID1),
@@ -205,6 +206,7 @@ class TestProvisionVmNodes:
         topologies = [{"topology": "compute", "networkType": "ethernet", "id": "t1"}]
 
         with (
+            patch.object(vm_mod, "resolve_vm_flavor_template_id", return_value=("ft-1", "gpu.small")),
             patch("common.network.list_topologies", return_value=topologies),
             patch("common.vpc.pick_compute_topology", return_value=topologies[0]),
             patch("common.vpc.create_vpc", return_value="vpc-x"),
@@ -228,6 +230,7 @@ class TestProvisionVmNodes:
         vm_ids = [_UUID1, _UUID2]
 
         with (
+            patch.object(vm_mod, "resolve_vm_flavor_template_id", return_value=("ft-1", "gpu.small")),
             patch("common.network.list_topologies", return_value=topologies),
             patch("common.vpc.pick_compute_topology", return_value=topologies[0]),
             patch("common.vpc.create_vpc", return_value="vpc-shared") as mock_create_vpc,
@@ -250,6 +253,7 @@ class TestProvisionVmNodes:
         existing_vm = {"id": _UUID1, "name": "isv-vm-node-1000"}
 
         with (
+            patch.object(vm_mod, "resolve_vm_flavor_template_id", return_value=("ft-1", "gpu.small")),
             patch.object(vm_mod, "resolve_ssh_key", return_value=("pub", "/key")),
             patch.object(vm_mod, "allocate_vm", side_effect=ValueError("status 409 conflict")),
             patch.object(vm_mod, "list_vms", return_value=[existing_vm]),

@@ -12,8 +12,8 @@ from .polling import poll_until
 _RUNNING_STATES = frozenset({"running", "success"})
 _FAILED_STATES = frozenset({"failed", "error"})
 _DEFAULT_POLL_INTERVAL = 15
-_DEFAULT_CREATE_TIMEOUT = 900
-_DEFAULT_DELETE_TIMEOUT = 180
+_DEFAULT_CREATE_TIMEOUT = 1800
+_DEFAULT_DELETE_TIMEOUT = 900
 
 
 def cluster_path(tenant_id: str, cluster_id: str | None = None) -> str:
@@ -143,12 +143,18 @@ def wait_cluster_deleted(
 
     def check() -> tuple[bool, None, str]:
         try:
-            get_cluster(client, tenant_id, cluster_id)
+            cluster = get_cluster(client, tenant_id, cluster_id)
         except ValueError as exc:
             if "404" in str(exc):
                 return True, None, "cluster not found (deleted)"
             raise
-        return False, None, "cluster still exists"
+        # Bridge returns 200 with empty body after deletion instead of 404
+        if not cluster or not (cluster.get("id") or cluster.get("ID")):
+            return True, None, "cluster returned empty response (deleted)"
+        status = str(cluster.get("status") or "").lower()
+        import sys
+        print(f"[k8s_teardown] cluster response keys={list(cluster.keys())[:6]} status={status!r}", file=sys.stderr)
+        return False, None, f"cluster still exists (status={status!r})"
 
     poll_until(check, label="k8s_teardown", interval=interval, timeout=timeout)
 

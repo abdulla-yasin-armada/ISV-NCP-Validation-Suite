@@ -32,6 +32,8 @@ def wait_for_ssh(
                     "-o",
                     "StrictHostKeyChecking=no",
                     "-o",
+                    "UserKnownHostsFile=/dev/null",
+                    "-o",
                     "ConnectTimeout=5",
                     "-o",
                     "BatchMode=yes",
@@ -130,6 +132,65 @@ def ssh_run_password(
                 pass
 
 
+def ssh_run_key(
+    host: str,
+    user: str,
+    key_file: str,
+    command: str,
+    jumphost: str = "",
+    timeout: int = 30,
+) -> tuple[int, str, str]:
+    """Run a command on a remote host via SSH key authentication.
+
+    Mirrors ``ssh_run_password`` but uses a private key file instead of a
+    password. Supports an optional jumphost (also key-authenticated).
+
+    Returns:
+        (exit_code, stdout, stderr) — all decoded as UTF-8.
+    """
+    import paramiko
+
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    jh_client: paramiko.SSHClient | None = None
+
+    try:
+        connect_kwargs: dict[str, Any] = {
+            "username": user,
+            "key_filename": key_file,
+            "timeout": timeout,
+            "look_for_keys": False,
+            "allow_agent": False,
+        }
+        if jumphost:
+            jh_user, jh_host, jh_port = parse_jumphost(jumphost)
+            jh_client = paramiko.SSHClient()
+            jh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            jh_client.connect(
+                jh_host, port=jh_port, username=jh_user,
+                timeout=timeout, look_for_keys=True, allow_agent=True,
+            )
+            transport = jh_client.get_transport()
+            assert transport is not None
+            connect_kwargs["sock"] = transport.open_channel(
+                "direct-tcpip", (host, 22), ("127.0.0.1", 0)
+            )
+
+        client.connect(host, **connect_kwargs)
+        _stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+        stdout_data = stdout.read().decode("utf-8", errors="replace")
+        stderr_data = stderr.read().decode("utf-8", errors="replace")
+        exit_code = stdout.channel.recv_exit_status()
+        return exit_code, stdout_data, stderr_data
+    finally:
+        client.close()
+        if jh_client:
+            try:
+                jh_client.close()
+            except Exception:
+                pass
+
+
 def get_uptime_via_ssh(host: str, key_file: str, username: str = "ubuntu") -> float | None:
     """Return system uptime in seconds via SSH, or None on failure."""
     try:
@@ -138,6 +199,8 @@ def get_uptime_via_ssh(host: str, key_file: str, username: str = "ubuntu") -> fl
                 "ssh",
                 "-o",
                 "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
                 "-o",
                 "ConnectTimeout=10",
                 "-o",

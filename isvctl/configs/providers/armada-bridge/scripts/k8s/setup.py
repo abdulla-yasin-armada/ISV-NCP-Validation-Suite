@@ -44,6 +44,7 @@ sys.path.insert(0, str(_SCRIPT_DIR))
 
 from common.bridge_client import BridgeClient  # noqa: E402
 from common.catalog import discover_bm_product_type_id  # noqa: E402
+from common.context import print_run_context  # noqa: E402
 from common.cluster import (  # noqa: E402
     create_cluster,
     default_kubeconfig_path,
@@ -70,8 +71,8 @@ from common.network import (  # noqa: E402
     is_import_flow,
     list_topologies,
 )
-from common.tenant import resolve_tenant_id  # noqa: E402
-from common.vm import provision_vm_nodes  # noqa: E402
+from common.tenant import create_tenant_b_client, resolve_tenant_id  # noqa: E402
+from common.vm import provision_vm_nodes, resolve_ssh_key  # noqa: E402
 from common.vpc import deprovision_discovery_vpcs, provision_discovery_vpcs  # noqa: E402
 
 DEMO_MODE = os.environ.get("ISVCTL_DEMO_MODE") == "1"
@@ -159,6 +160,12 @@ def _provision_k8s_nodes(
 
     epoch = int(time.time())
     vm_flavor = os.environ.get("BRIDGE_VM_FLAVOR", "gpu.1x")
+    node_flavors_env = os.environ.get("BRIDGE_K8S_NODE_FLAVORS", "").strip()
+    vm_flavors: list[str] = (
+        [f.strip() for f in node_flavors_env.split(",") if f.strip()]
+        if node_flavors_env
+        else [vm_flavor]
+    )
     converged_vpc_id = "n/a"
     converged_subnet_id = ""
 
@@ -172,7 +179,7 @@ def _provision_k8s_nodes(
     else:
         node_ids, vpc_id, subnet_id = provision_vm_nodes(
             client, tenant_id, epoch=epoch, discovery_flow=discovery,
-            vm_flavor=vm_flavor, count=node_count,
+            vm_flavors=vm_flavors, count=node_count,
             name_prefix="isv-k8s-node", poll_timeout=_VM_POLL_TIMEOUT,
         )
 
@@ -198,7 +205,7 @@ _ACL_POLL_TIMEOUT = 1800  # 30 min
 
 
 def _provision_acl_probe_bm(
-    client: BridgeClient,
+    client_b: BridgeClient,
     tenant_b: str,
     api_endpoint: str,
     state: dict[str, Any],
@@ -218,36 +225,37 @@ def _provision_acl_probe_bm(
     compute_vpc_id = ""
     converged_vpc_id = ""
     node_id = ""
+    tenant_b_id = ""
 
     try:
-        tenant_b_id = resolve_tenant_id(client, tenant_b)
+        tenant_b_id = resolve_tenant_id(client_b, tenant_b)
 
-        topologies = list_topologies(client)
+        topologies = list_topologies(client_b)
         discovery = is_discovery_flow(topologies)
 
         subnet_ids: list[str] = []
         if discovery:
             compute_vpc_id, compute_subnet_id, converged_vpc_id, converged_subnet_id = (
-                provision_discovery_vpcs(client, tenant_b_id, epoch=epoch, prefix="isv-acl-probe")
+                provision_discovery_vpcs(client_b, tenant_b_id, epoch=epoch, prefix="isv-acl-probe")
             )
             subnet_ids = [compute_subnet_id, converged_subnet_id]
 
-        existing_ids = {compute_node_id(n) for n in list_computes(client, tenant_b_id)}
+        existing_ids = {compute_node_id(n) for n in list_computes(client_b, tenant_b_id)}
         existing_ids.discard("")
 
         explicit_flavor = os.environ.get("BRIDGE_BM_FLAVOR", "").strip()
         product_type_id, _, _ = discover_bm_product_type_id(
-            client,
+            client_b,
             explicit_id=explicit_flavor,
             gpu_type_filter=os.environ.get("BRIDGE_BM_GPU_TYPE", ""),
         )
 
         allocate_bm(
-            client, tenant_b_id, product_type_id,
+            client_b, tenant_b_id, product_type_id,
             count=1, subnet_ids=subnet_ids or None,
         )
         nodes = poll_until_bm_ready(
-            client, tenant_b_id, product_type_id, existing_ids,
+            client_b, tenant_b_id, product_type_id, existing_ids,
             count=1,
             require_mgmt_ip=True,
             label="acl_probe_node",
@@ -267,6 +275,7 @@ def _provision_acl_probe_bm(
 
         state.update({
             "acl_probe_node_id": node_id,
+            "acl_probe_node_type": "bm",
             "acl_probe_tenant_b_id": tenant_b_id,
             "acl_probe_vpc_id": compute_vpc_id,
             "acl_probe_converged_vpc_id": converged_vpc_id,
@@ -285,12 +294,96 @@ def _provision_acl_probe_bm(
 
     except Exception as exc:
         print(f"WARNING: ACL probe BM provisioning failed: {exc}", file=sys.stderr)
-        if node_id:
+        if node_id and tenant_b_id:
             try:
-                deallocate_bm(client, tenant_b_id, node_id, label="acl_probe_cleanup")
+                deallocate_bm(client_b, tenant_b_id, node_id, label="acl_probe_cleanup")
             except Exception:
                 pass
-        deprovision_discovery_vpcs(client, tenant_b_id, compute_vpc_id, converged_vpc_id)
+        if tenant_b_id:
+            deprovision_discovery_vpcs(client_b, tenant_b_id, compute_vpc_id, converged_vpc_id)
+        return ""
+
+
+def _provision_acl_probe_vm(
+    client_b: BridgeClient,
+    tenant_b: str,
+    api_endpoint: str,
+    state: dict[str, Any],
+) -> str:
+    """Allocate a VM in Tenant B for K8sApiNetworkAclCheck's live probe.
+
+    Uses SSH key auth (auto-generated key in ~/.cache/isvctl/vm-keys/acl-probe.pem).
+    The VM is kept alive after this function returns. Its vm_id is written
+    into ``state`` so that ``teardown.py`` can delete it later.
+
+    Returns the full ``unauthorized_probe_cmd`` string, or an empty string if
+    provisioning fails (the validation will auto-skip).
+    """
+    epoch = int(time.time())
+    vpc_id = "n/a"
+    vm_id = ""
+    tenant_b_id = ""
+
+    try:
+        tenant_b_id = resolve_tenant_id(client_b, tenant_b)
+
+        topologies = list_topologies(client_b)
+        discovery = is_discovery_flow(topologies)
+
+        vm_flavor = os.environ.get("BRIDGE_ACL_PROBE_VM_FLAVOR", "").strip()
+        _, key_file = resolve_ssh_key("acl-probe")
+
+        vm_ids, vpc_id, _ = provision_vm_nodes(
+            client_b, tenant_b_id,
+            epoch=epoch,
+            discovery_flow=discovery,
+            vm_flavor=vm_flavor,
+            count=1,
+            name_prefix="isv-acl-probe",
+            poll_timeout=_ACL_POLL_TIMEOUT,
+        )
+        vm_id = vm_ids[0]
+
+        from common.vm import get_vm, get_public_ip  # noqa: E402
+        vm_data = get_vm(client_b, tenant_b_id, vm_id)
+        probe_ip = get_public_ip(vm_data)
+        vm_user = str(vm_data.get("userName") or "ubuntu")
+
+        if not probe_ip:
+            raise RuntimeError(
+                f"ACL probe VM {vm_id} in Tenant B has no public IP after provisioning"
+            )
+
+        state.update({
+            "acl_probe_node_id": vm_id,
+            "acl_probe_node_type": "vm",
+            "acl_probe_tenant_b_id": tenant_b_id,
+            "acl_probe_vpc_id": vpc_id,
+            "acl_probe_converged_vpc_id": "n/a",
+        })
+
+        print(
+            f"ACL probe VM provisioned in Tenant B: {probe_ip} ({vm_id})",
+            file=sys.stderr,
+        )
+        return (
+            f"python3 {_ACL_PROBE_SCRIPT} "
+            f"--bm-ip {probe_ip} "
+            f"--bm-user {vm_user} "
+            f"--key-file {key_file} "
+            f"--api-endpoint {api_endpoint}"
+        )
+
+    except Exception as exc:
+        print(f"WARNING: ACL probe VM provisioning failed: {exc}", file=sys.stderr)
+        if vm_id:
+            try:
+                from common.vm import vm_path  # noqa: E402
+                client_b.delete(vm_path(tenant_b_id, vm_id))
+            except Exception:
+                pass
+        if tenant_b_id:
+            deprovision_discovery_vpcs(client_b, tenant_b_id, vpc_id, "n/a")
         return ""
 
 
@@ -422,6 +515,23 @@ def main() -> int:
 
     client = BridgeClient.from_env()
     tenant_id = resolve_tenant_id(client, args.tenant)
+
+    node_type = os.environ.get("BRIDGE_K8S_NODE_TYPE", "bm").strip().lower()
+    node_count = int(os.environ.get("BRIDGE_K8S_NODE_COUNT", "1"))
+    node_flavors = os.environ.get("BRIDGE_K8S_NODE_FLAVORS", "").strip() or os.environ.get("BRIDGE_VM_FLAVOR", "")
+    node_ids_env = os.environ.get("BRIDGE_K8S_NODE_IDS", "").strip()
+    tenant_b = os.environ.get("BRIDGE_TENANT_B", "").strip()
+    probe_node_type = os.environ.get("BRIDGE_ACL_PROBE_NODE_TYPE", "bm").strip().lower()
+    print_run_context("Kubernetes", {
+        "BRIDGE_K8S_NODE_TYPE"       : node_type,
+        "BRIDGE_K8S_NODE_COUNT"      : str(node_count),
+        "BRIDGE_K8S_NODE_FLAVORS"    : node_flavors or "(default)",
+        "BRIDGE_K8S_NODE_IDS"        : node_ids_env or "(provision new)",
+        "BRIDGE_TENANT_B"            : tenant_b or "(not set — ACL probe skipped)",
+        "BRIDGE_TENANT_B_USERNAME"   : os.environ.get("BRIDGE_TENANT_B_USERNAME", "(not set)") if tenant_b else "(n/a)",
+        "BRIDGE_ACL_PROBE_NODE_TYPE" : probe_node_type if tenant_b else "(n/a)",
+    })
+
     nodes_info = _provision_k8s_nodes(client, tenant_id, cli_node_ids=args.node_id)
 
     cluster_name = os.environ.get("BRIDGE_K8S_CLUSTER_NAME", f"isv-k8s-{int(time.time())}")
@@ -466,15 +576,26 @@ def main() -> int:
     if api_endpoint and isinstance(inventory.get("kubernetes"), dict):
         inventory["kubernetes"]["api_endpoint"] = api_endpoint
 
-    # Provision a Tenant B BM for the K8sApiNetworkAclCheck live probe when
-    # BRIDGE_TENANT_B is set. state_extra receives acl_probe_* keys to persist.
+    # Provision a Tenant B node (BM or VM) for the K8sApiNetworkAclCheck live probe
+    # when BRIDGE_TENANT_B is set. state_extra receives acl_probe_* keys to persist.
+    # BRIDGE_ACL_PROBE_NODE_TYPE=vm → allocate a VM in Tenant B (key auth, default flavor).
+    # BRIDGE_ACL_PROBE_NODE_TYPE=bm (default) → allocate a BM in Tenant B (password auth).
+    # A separate BridgeClient is created for Tenant B using BRIDGE_TENANT_B_USERNAME /
+    # BRIDGE_TENANT_B_PASSWORD (required) so Tenant B operations use the correct account.
     state_extra: dict[str, Any] = {}
     tenant_b = os.environ.get("BRIDGE_TENANT_B", "").strip()
     unauthorized_probe_cmd = ""
     if tenant_b:
-        unauthorized_probe_cmd = _provision_acl_probe_bm(
-            client, tenant_b, api_endpoint, state_extra
-        )
+        client_b = create_tenant_b_client()
+        probe_node_type = os.environ.get("BRIDGE_ACL_PROBE_NODE_TYPE", "bm").strip().lower()
+        if probe_node_type in {"vm", "virtualmachine"}:
+            unauthorized_probe_cmd = _provision_acl_probe_vm(
+                client_b, tenant_b, api_endpoint, state_extra
+            )
+        else:
+            unauthorized_probe_cmd = _provision_acl_probe_bm(
+                client_b, tenant_b, api_endpoint, state_extra
+            )
 
     inventory.update(
         {

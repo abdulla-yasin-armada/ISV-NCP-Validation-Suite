@@ -16,6 +16,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import http.client
 import http.cookiejar
 import json
 import os
@@ -68,7 +69,10 @@ def _require_env(*names: str) -> None:
         "\nSet them before running the suite:\n"
         "  export BRIDGE_URL=...\n"
         "  export BRIDGE_USERNAME=...\n"
-        "  export BRIDGE_PASSWORD=..."
+        "  export BRIDGE_PASSWORD=...\n"
+        "  export BRIDGE_TENANT=<your-tenant-name-or-uuid>\n"
+        "\nIf your Bridge instance uses a self-signed certificate:\n"
+        "  export BRIDGE_INSECURE=1"
     )
     raise RuntimeError("\n".join(lines))
 
@@ -124,6 +128,7 @@ class BridgeClient:
         if ssl_context is not None:
             handlers.append(urllib.request.HTTPSHandler(context=ssl_context))
         self._opener = urllib.request.build_opener(*handlers)
+        self._opener.addheaders = [("User-Agent", "curl/8.7.1")]
 
     @classmethod
     def from_env(cls) -> BridgeClient:
@@ -238,9 +243,17 @@ class BridgeClient:
             )
         )
         _log.debug("POST %s/auth/login (credentials redacted)", self.base_url)
-        with self._opener.open(req, timeout=30) as resp:
-            _log.debug("POST /auth/login -> %d", resp.status)
-        self._save_cookies()
+        for attempt in range(2):
+            try:
+                with self._opener.open(req, timeout=30) as resp:
+                    _log.debug("POST /auth/login -> %d", resp.status)
+                self._save_cookies()
+                return
+            except (http.client.RemoteDisconnected, ConnectionResetError, TimeoutError) as e:
+                if attempt == 0:
+                    _log.debug("POST /auth/login — transient error, retrying (%s)", e)
+                    continue
+                raise
 
     def login_as(self, email: str, password: str) -> BridgeClient:
         """Return a new BridgeClient authenticated as a different user.
@@ -267,14 +280,22 @@ class BridgeClient:
             url += "?" + urllib.parse.urlencode(params)
         _log.debug("GET %s", url)
         req = self._with_host(urllib.request.Request(url, method="GET"))
-        try:
-            with self._opener.open(req, timeout=30) as resp:
-                raw = resp.read().decode()
-                _log.debug("GET %s -> %d  body=%s", url, resp.status, raw)
-        except urllib.error.HTTPError as e:
-            raw = e.read().decode()
-            _log.debug("GET %s -> %d  body=%s", url, e.code, raw)
-            raise ValueError(f"GET {path} failed with status {e.code}: {raw}") from e
+        req.add_header("Accept", "application/json")
+        for attempt in range(2):
+            try:
+                with self._opener.open(req, timeout=30) as resp:
+                    raw = resp.read().decode()
+                    _log.debug("GET %s -> %d  body=%s", url, resp.status, raw)
+                break
+            except (http.client.RemoteDisconnected, ConnectionResetError, TimeoutError) as e:
+                if attempt == 0:
+                    _log.debug("GET %s — transient error, retrying (%s)", url, e)
+                    continue
+                raise
+            except urllib.error.HTTPError as e:
+                raw = e.read().decode()
+                _log.debug("GET %s -> %d  body=%s", url, e.code, raw)
+                raise ValueError(f"GET {path} failed with status {e.code}: {raw}") from e
         if not raw:
             return {}
         try:
@@ -310,7 +331,18 @@ class BridgeClient:
             raw = e.read().decode()
             _log.debug("POST %s%s -> %d  body=%s", self.base_url, path, e.code, raw)
             raise ValueError(f"POST {path} failed with status {e.code}: {raw}") from e
-        return json.loads(raw) if raw else {}
+        if not raw.strip():
+            return {}
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            _log.warning(
+                "POST %s returned non-JSON response (%d bytes): %.200r",
+                path,
+                len(raw),
+                raw,
+            )
+            return {}
 
     def post_multipart(
         self,

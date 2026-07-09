@@ -8,7 +8,7 @@
    from state).
 4. Discovery flow: delete subnet/VPC when real UUIDs were created.
    Import flow uses vpc_id ``n/a`` — network delete is skipped.
-5. Deallocate the Tenant B ACL probe BM + network (if ``BRIDGE_TENANT_B``
+5. Deallocate the Tenant B ACL probe node (BM or VM) + network (if ``BRIDGE_TENANT_B``
    was set during setup and state contains ``acl_probe_node_id``).
 6. ``clear_state()`` — remove the k8s state file written by setup.
 
@@ -31,7 +31,7 @@ from common.cluster import delete_cluster, wait_cluster_deleted  # noqa: E402
 from common.errors import handle_bridge_errors  # noqa: E402
 from common.k8s_state import clear_state, load_state  # noqa: E402
 from common.metal import deallocate_bm  # noqa: E402
-from common.tenant import resolve_tenant_id  # noqa: E402
+from common.tenant import create_tenant_b_client, resolve_tenant_id  # noqa: E402
 from common.vpc import deprovision_discovery_vpcs  # noqa: E402
 from common.vm import get_vm, vm_path, wait_for_vm_deleted  # noqa: E402
 
@@ -141,22 +141,29 @@ def main() -> int:
     converged_vpc_id = str(state.get("converged_vpc_id") or "")
     deprovision_discovery_vpcs(client, tenant_id, vpc_id, converged_vpc_id)
 
-    # Deallocate the Tenant B BM provisioned by setup.py (_provision_acl_probe_bm)
-    # for the K8sApiNetworkAclCheck live probe (kept alive through the test phase).
+    # Deallocate the Tenant B node provisioned by setup.py for K8sApiNetworkAclCheck.
+    # acl_probe_node_type in state tells us whether it was a BM or VM.
+    # A separate client authenticated as Tenant B user is required.
     acl_node_id = str(state.get("acl_probe_node_id") or "")
     acl_tenant_b_id = str(state.get("acl_probe_tenant_b_id") or "")
     if acl_node_id and acl_tenant_b_id:
-        deallocate_bm(
-            client, acl_tenant_b_id, acl_node_id,
-            label="acl_probe_teardown",
-            poll_timeout=_BM_POLL_TIMEOUT,
-            poll_interval=_BM_POLL_INTERVAL,
-        )
-        result["resources_deleted"].append(f"acl_probe_bm:{acl_node_id}")
+        client_b = create_tenant_b_client()
+        acl_node_type = str(state.get("acl_probe_node_type") or "bm")
+        if acl_node_type == "vm":
+            _delete_vm(client_b, acl_tenant_b_id, acl_node_id)
+            result["resources_deleted"].append(f"acl_probe_vm:{acl_node_id}")
+        else:
+            deallocate_bm(
+                client_b, acl_tenant_b_id, acl_node_id,
+                label="acl_probe_teardown",
+                poll_timeout=_BM_POLL_TIMEOUT,
+                poll_interval=_BM_POLL_INTERVAL,
+            )
+            result["resources_deleted"].append(f"acl_probe_bm:{acl_node_id}")
 
         acl_vpc_id = str(state.get("acl_probe_vpc_id") or "")
         acl_converged_vpc_id = str(state.get("acl_probe_converged_vpc_id") or "")
-        deprovision_discovery_vpcs(client, acl_tenant_b_id, acl_vpc_id, acl_converged_vpc_id)
+        deprovision_discovery_vpcs(client_b, acl_tenant_b_id, acl_vpc_id, acl_converged_vpc_id)
 
     clear_state()
     result.update({"success": True, "message": "Cluster deleted"})
