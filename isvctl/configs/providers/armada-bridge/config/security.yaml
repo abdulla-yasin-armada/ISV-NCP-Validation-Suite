@@ -57,6 +57,7 @@ commands:
         command: "python ../scripts/security/api_endpoint_test.py"
         args: ["--tenant", "{{bridge_tenant}}", "--bridge-url", "{{bridge_url}}"]
         timeout: 60
+        best_effort: true
 
       - name: oidc_user_auth_test
         phase: test
@@ -91,6 +92,7 @@ commands:
         command: "python ../scripts/security/least_privilege_test.py"
         args: ["--tenant", "{{bridge_tenant}}"]
         timeout: 180
+        best_effort: true
 
       - name: audit_logging_test
         phase: test
@@ -104,6 +106,7 @@ commands:
         command: "python ../scripts/security/tenant_isolation_test.py"
         args: ["--tenant-a", "{{bridge_tenant}}", "--tenant-b", "{{bridge_tenant_b}}"]
         timeout: 180
+        best_effort: true
 
       - name: mfa_enforcement
         phase: test

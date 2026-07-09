@@ -22,6 +22,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
+from common.context import print_run_context
 from common.errors import handle_bridge_errors
 from common.tenant import resolve_tenant_id
 
@@ -40,6 +41,8 @@ def main() -> int:
         "test_name": "preflight",
         "checks": {},
     }
+
+    print_run_context("Security")
 
     if DEMO_MODE:
         result.update({

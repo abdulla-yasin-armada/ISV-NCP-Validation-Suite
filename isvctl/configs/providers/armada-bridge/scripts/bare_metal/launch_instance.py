@@ -29,6 +29,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.bridge_client import BridgeClient
+from common.context import print_run_context
 from common.errors import handle_bridge_errors
 from common.metal import provision_bm_node
 from common.network import is_discovery_flow, list_topologies
@@ -48,6 +49,16 @@ def main() -> int:
     )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
+
+    bm_flavor = args.flavor.strip() or os.environ.get("BRIDGE_BM_FLAVOR", "").strip()
+    print_run_context(
+        "Bare Metal",
+        {
+            "instance_name": args.name,
+            "BRIDGE_BM_FLAVOR": bm_flavor or "(auto-discover)",
+            "BRIDGE_BM_GPU_TYPE": os.environ.get("BRIDGE_BM_GPU_TYPE", "").strip() or "(none)",
+        },
+    )
 
     result: dict[str, Any] = {
         "success": False,
@@ -88,8 +99,8 @@ def main() -> int:
         )
 
         # Forward --flavor arg to env so provision_bm_node picks it up.
-        if args.flavor:
-            os.environ["BRIDGE_BM_FLAVOR"] = args.flavor
+        if bm_flavor:
+            os.environ["BRIDGE_BM_FLAVOR"] = bm_flavor
 
         epoch = int(time.time())
         node_ids, vpc_id, subnet_id, converged_vpc_id, converged_subnet_id = provision_bm_node(
